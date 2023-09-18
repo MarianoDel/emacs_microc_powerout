@@ -1,0 +1,19 @@
+#files to not save
+*.lst
+*.o
+*.elf
+*.map
+*.bin
+.tags
+GPATH
+GRTAGS
+GTAGS
+*.zip
+*.out
+*.pdf
+*.txt
+*.gcov
+*.gcda
+*.gcno
+*.pyc
+
