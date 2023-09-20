@@ -213,10 +213,11 @@ tests_treatment:
 	# compile first modules in this test
 	# first module objects to test
 	gcc -c --coverage src/treatment.c -I. $(INCDIR) $(DDEFS)
+	gcc -c src/utils.c -I. $(INCDIR)
 	# second auxiliary helper modules
 	gcc -c src/tests_ok.c -I $(INCDIR)
 	gcc -c src/tests_mock_usart.c -I $(INCDIR)
-	gcc --coverage src/tests_treatment.c treatment.o tests_ok.o tests_mock_usart.o -I $(INCDIR) $(DDEFS)
+	gcc --coverage src/tests_treatment.c treatment.o utils.o tests_ok.o tests_mock_usart.o -I $(INCDIR) $(DDEFS)
 	./a.out
 	# process coverage
 	gcov treatment.c -m
@@ -248,18 +249,18 @@ tests_treat_all_chain:
 	./a.out
 
 
-tests_comms_channels:
+tests_comms:
 	# compile first modules in this test
 	# first module objects to test
-	gcc -c --coverage src/comms_channels.c -I. $(INCDIR) $(DDEFS)
-	gcc -c src/utils.c -I. $(INCDIR) $(DDEFS)
+	gcc -c --coverage src/comms.c -I. $(INCDIR) $(DDEFS)
+	# gcc -c src/utils.c -I. $(INCDIR) $(DDEFS)
 	# second auxiliary helper modules
 	gcc -c src/tests_ok.c -I $(INCDIR)
 	gcc -c src/tests_mock_usart.c -I $(INCDIR)
-	gcc --coverage src/tests_comms_channels.c comms_channels.o utils.o tests_ok.o tests_mock_usart.o -I $(INCDIR) $(DDEFS)
+	gcc --coverage src/tests_comms.c comms.o tests_ok.o tests_mock_usart.o -I $(INCDIR) $(DDEFS)
 	./a.out
 	# process coverage
-	gcov comms_channels.c -m
+	gcov comms.c -m
 
 
 tests_signals:
@@ -373,17 +374,6 @@ tests_comms_rasp:
 	gcc src/tests_comms_rasp.c comms_from_rasp.o treatment.o utils.o tests_ok.o tests_mock_usart.o -I $(INCDIR) $(DDEFS)
 	./a.out
 
-tests_tamper_funcs:
-	# compile first modules in this test
-	# first module objects to test
-	gcc -c --coverage src/tamper_funcs.c -I. $(INCDIR) $(DDEFS)
-	# second auxiliary helper modules
-	gcc -c src/tests_ok.c -I $(INCDIR)
-	# link everything
-	gcc --coverage src/tests_tamper_funcs.c tamper_funcs.o tests_ok.o -I $(INCDIR) $(DDEFS)
-	./a.out
-	# process coverage
-	gcov tamper_funcs.c -m
 
 
 # *** EOF ***

@@ -163,9 +163,8 @@ typedef enum
 //Estados Externos de LED BLINKING
 #define LED_NO_BLINKING    0     
 #define LED_TREATMENT_STANDBY    1
-#define LED_TREATMENT_GENERATING    2
-#define LED_TREATMENT_PAUSED    3
-#define LED_TREATMENT_BRIDGE_MODE    5
+#define LED_TREATMENT_SQUARE_RUNNING    2
+#define LED_TREATMENT_SINUS_RUNNING    3
 
 
 

@@ -1,4 +1,4 @@
-# Magnet version 3
+# MicroCurrent version 1.0
 micro STM32F103RCT6
 
 Before begin check micro selection and configs.
