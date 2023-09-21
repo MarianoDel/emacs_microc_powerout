@@ -17,11 +17,21 @@
 #include <stdio.h>
 #include <string.h>
 
+
 // Types Constants and Macros --------------------------------------------------
+typedef enum {
+    TREATMENT_STANDBY = 0,
+    TREATMENT_SQUARE_RUNNING,
+    TREATMENT_SINUS_RUNNING,
+    TREATMENT_STOPPING
+
+} treatment_e;
+
 
 
 // Externals -------------------------------------------------------------------
 extern treatment_conf_t treatment_conf;
+extern treatment_e treat_state;
 
 
 // Globals ---------------------------------------------------------------------
@@ -45,6 +55,8 @@ int main (int argc, char *argv[])
 
     Test_Treatment_Settings();
 
+    Test_Treatment_Manager ();
+        
     return 0;
 }
 
@@ -90,122 +102,155 @@ void Test_Treatment_Settings (void)
         }
     }
 
-    // signal = TRIANGULAR_SIGNAL;
-    // resp = Treatment_SetSignalType (signal);
-    // signal = Treatment_GetSignalType();
-    // if ((resp != resp_ok) || (signal != TRIANGULAR_SIGNAL))
-    // {
-    //     printf("\nTreatSignal error with %d ", signal);
-    //     some_err = 1;
-    // }
+    if (!some_err)
+    {
+        for (int i = 0; i < 1000; i++)
+        {
+            int intensity = i;
 
-    // signal = SINUSOIDAL_SIGNAL;
-    // resp = Treatment_SetSignalType (signal);
-    // signal = Treatment_GetSignalType();
-    // if ((resp != resp_ok) || (signal != SINUSOIDAL_SIGNAL))
-    // {
-    //     printf("\nTreatSignal error with %d ", signal);
-    //     some_err = 1;
-    // }
+            sprintf(test_str, "%duA\r\n", intensity);
+            resp = Treatment_SetIntensity_Str (test_str);
+            if ((resp != resp_ok) ||
+                (treatment_conf.intensity != intensity))
+            {
+                printf("\nintensity error: %s ", test_str);
+                some_err = 1;
+                break;
+            }
+        }
+    }
 
-    // signal = 10;
-    // resp = Treatment_SetSignalType (signal);
-    // if (resp != resp_error)
-    // {
-    //     printf("\nTreatSignal error with %d ", signal);
-    //     some_err = 1;
-    // }
+    if (!some_err)
+    {
+        strcpy(test_str, "pos\r\n");
+        resp = Treatment_SetPolarity_Str (test_str);
+        if ((resp != resp_ok) ||
+            (treatment_conf.polarity != 0))
+        {
+            printf("\npolarity error: %s ", test_str);
+            some_err = 1;
+        }
+    }
 
-    // unsigned char f_int = 10;
-    // unsigned char f_dec = 10;
-    // resp = Treatment_SetFrequency (f_int, f_dec);
-    // Treatment_GetFrequency (&f_int, &f_dec);
-    // if ((resp != resp_ok) || (f_int != 10) || (f_dec != 10))
-    // {
-    //     printf("\nTreatFreq error with %d.%d ", f_int, f_dec);
-    //     some_err = 1;
-    // }
+    if (!some_err)
+    {
+        strcpy(test_str, "neg\r\n");
+        resp = Treatment_SetPolarity_Str (test_str);
+        if ((resp != resp_ok) ||
+            (treatment_conf.polarity != 1))
+        {
+            printf("\npolarity error: %s ", test_str);
+            some_err = 1;
+        }
+    }
 
-    // f_int = 100;
-    // f_dec = 10;
-    // resp = Treatment_SetFrequency (f_int, f_dec);
-    // if (resp != resp_error)
-    // {
-    //     printf("\nTreatFreq error with %d.%d ", f_int, f_dec);
-    //     some_err = 1;
-    // }
-
-    // unsigned char power = 100;
-    // resp = Treatment_SetPower (power);
-    // power = Treatment_GetPower ();
-
-    // if ((resp != resp_ok) || (power != 100))
-    // {
-    //     printf("\nTreatPower error with %d ", power);
-    //      some_err = 1;
-    // }
-
-    // power = 1;
-    // resp = Treatment_SetPower (power);
-    // power = Treatment_GetPower ();
-    // if ((resp != resp_ok) || (power != 10))
-    // {
-    //     printf("\nTreatPower error with %d ", power);
-    //     some_err = 1;
-    // }
-
-    // power = 120;
-    // resp = Treatment_SetPower (power);
-    // power = Treatment_GetPower ();
-    // if ((resp != resp_ok) || (power != 100))
-    // {
-    //     printf("\nTreatPower error with %d ", power);
-    //     some_err = 1;
-    // }
-
-    // unsigned char minutes = 100;
-    // unsigned short secs = 0;
-    // resp = Treatment_SetTimeinMinutes (minutes);
-    // secs = Treatment_GetTime ();
-    // if ((resp != resp_ok) || (secs != (minutes * 60)))
-    // {
-    //     printf("\nTreatTime error with %d ", minutes);
-    //     some_err = 1;
-    // }
-
-    // minutes = 121;
-    // resp = Treatment_SetTimeinMinutes (minutes);
-    // if (resp != resp_error)
-    // {
-    //     printf("\nTreatTime error with %d ", minutes);
-    //     some_err = 1;
-    // }
-
-    // unsigned char channels_a = 0;
-    // unsigned char channels_b = 0;    
-    // channels_a |= ENABLE_CH1_FLAG | ENABLE_CH2_FLAG | ENABLE_CH3_FLAG;
-    // Treatment_SetChannelsFlag (channels_a);
-    // channels_b = Treatment_GetChannelsFlag ();
-    // if ((channels_a & 0x0f) != channels_b)
-    // {
-    //     printf("\nTreatChannels error with setted: %d getted: %d ", channels_a, channels_b);
-    //     some_err = 1;
-    // }
-
-    // channels_a = DISABLE_CH1_FLAG;
-    // Treatment_SetChannelsFlag (channels_a);
-    // channels_b = Treatment_GetChannelsFlag ();
-    // if (channels_b != ((ENABLE_CH2_FLAG | ENABLE_CH3_FLAG) & 0x0f))
-    // {
-    //     printf("\nTreatChannels error with setted: %d getted: %d ", channels_a, channels_b);
-    //     some_err = 1;
-    // }
+    if (!some_err)
+    {
+        strcpy(test_str, "alt\r\n");
+        resp = Treatment_SetPolarity_Str (test_str);
+        if ((resp != resp_ok) ||
+            (treatment_conf.polarity != 2))
+        {
+            printf("\npolarity error: %s ", test_str);
+            some_err = 1;
+        }
+    }
     
+    if (!some_err)
+    {
+        strcpy(test_str, "square\r\n");
+        resp = Treatment_SetMode_Str (test_str);
+        if ((resp != resp_ok) ||
+            (treatment_conf.mode != 0))
+        {
+            printf("\nmode error: %s ", test_str);
+            some_err = 1;
+        }
+    }
 
-    // char all_conf [250];
-    // Treatment_GetAllConf(all_conf);
-    // printf("-- get all conf\n");
-    // printf("%s", all_conf);
+    if (!some_err)
+    {
+        strcpy(test_str, "sinus\r\n");
+        resp = Treatment_SetMode_Str (test_str);
+        if ((resp != resp_ok) ||
+            (treatment_conf.mode != 1))
+        {
+            printf("\nmode error: %s ", test_str);
+            some_err = 1;
+        }
+    }
+
+    if (!some_err)
+    {
+        for (int i = 0; i <= 100; i++)
+        {
+            sprintf(test_str, "%d\r\n", i);
+            resp = Treatment_SetThreshold_Str (test_str);
+            if ((resp != resp_ok) ||
+                (treatment_conf.threshold != i))
+            {
+                printf("\nthreshold error: %s ", test_str);
+                some_err = 1;
+                break;
+            }
+        }
+    }
+
+    if (!some_err)
+    {
+        Treatment_Start ();        
+        if (Treatment_Start_Flag() != 1)
+        {
+            printf("\nstart flag error!");
+            some_err = 1;            
+        }
+
+        Treatment_Start_Flag_Reset();
+        if (Treatment_Start_Flag() != 0)
+        {
+            printf("\nstart flag error!");
+            some_err = 1;            
+        }        
+    }
+
+    if (!some_err)
+    {
+        Treatment_Stop ();
+        if (Treatment_Stop_Flag() != 1)
+        {
+            printf("\nstop flag error!");
+            some_err = 1;            
+        }
+
+        Treatment_Stop_Flag_Reset();
+        if (Treatment_Stop_Flag() != 0)
+        {
+            printf("\nstop flag error!");
+            some_err = 1;            
+        }
+    }
+    
+    if (!some_err)
+    {
+        for (int i = 0; i <= 100; i++)
+        {
+            sprintf(test_str, "%d\r\n", i);
+            resp = Treatment_SetGain_Str (test_str);
+            if ((resp != resp_ok) ||
+                (treatment_conf.gain != i))
+            {
+                printf("\ngain error: %s ", test_str);
+                some_err = 1;
+                break;
+            }
+        }
+
+        if (Treatment_GetGain() != 100)
+        {
+            printf("\nget gain error");
+            some_err = 1;
+        }
+    }
     
     printf("Testing Treatment Module Settings: ");
     if (some_err)
@@ -216,129 +261,95 @@ void Test_Treatment_Settings (void)
 }
 
 
-// void Test_Treatment_Manager (void)
-// {
-//     int some_err = 0;    
-//     resp_e resp = resp_ok;
-
-//     antenna_in_this_treatment = 0x0f;
-//     printf("\n-- Testing Manager All Antennas --\n");
-//     printf("-- treat in standby\n");
-//     for (int i = 0; i < 20; i++)
-//         Treatment_Manager();
-
-//     if (treat_state != TREATMENT_STANDBY)
-//         some_err = 1;
-
-//     if (!some_err)
-//     {
-//         printf("-- treat to running\n");        
-//         comms_messages_rpi |= COMM_START_TREAT;
-        
-//         for (int i = 0; i < 20; i++)
-//         {
-//             // printf("running loop: %d treat_state: %d\n", i, treat_state);
-//             Treatment_Manager();
-//         }
-
-//         if (treat_state != TREATMENT_RUNNING)
-//             some_err = 1;
-        
-//     }
-
-//     if (!some_err)        
-//     {
-//         printf("-- treat to pause\n");
-//         comms_messages_rpi |= COMM_PAUSE_TREAT;
-        
-//         for (int i = 0; i < 20; i++)
-//         {
-//             Treatment_Manager();
-//             if (i == 5)
-//                 comms_messages_rpi |= COMM_START_TREAT;
-//         }
-
-//         if (treat_state != TREATMENT_PAUSED)
-//             some_err = 1;
-        
-//     }
-
-//     if (!some_err)
-//     {
-//         printf("-- treat to run again\n");    
-//         comms_messages_rpi |= COMM_PAUSE_TREAT;
-        
-//         for (int i = 0; i < 20; i++)
-//             Treatment_Manager();
-
-//         if (treat_state != TREATMENT_RUNNING)
-//             some_err = 1;
-        
-//     }
-
-//     if (!some_err)
-//     {
-//         printf("-- treat to stop\n");
-//         comms_messages_rpi |= COMM_STOP_TREAT;
-        
-//         for (int i = 0; i < 20; i++)
-//             Treatment_Manager();
-
-//         if (treat_state != TREATMENT_STANDBY)
-//             some_err = 1;
-        
-//     }
-
-//     if (!some_err)
-//     {
-//         printf("-- treat to running double START sended\n");    
-//         comms_messages_rpi |= COMM_START_TREAT;
-        
-//         for (int i = 0; i < 20; i++)
-//         {
-//             Treatment_Manager();
-//             if (i == 5)
-//                 comms_messages_rpi |= COMM_START_TREAT;
-//         }
-
-//         if (treat_state != TREATMENT_RUNNING)
-//             some_err = 1;
-        
-//     }
-
-//     if (!some_err)
-//     {
-//         printf("-- treat to pause and stop\n");
-//         comms_messages_rpi |= COMM_PAUSE_TREAT;
-        
-//         for (int i = 0; i < 20; i++)
-//         {
-//             Treatment_Manager();
-//             if (i == 5)
-//                 comms_messages_rpi |= COMM_STOP_TREAT;
-//         }
-
-//         if (treat_state != TREATMENT_STANDBY)
-//             some_err = 1;
-        
-//     }
-    
-//     printf("Testing Treatment Manager: ");
-//     if (some_err)
-//         PrintERR();
-//     else
-//         PrintOK();
-    
-// }
-
-
-// Module Mocked Functions -----------------------------------------------------
-void RPI_Send (char * a)
+void Test_Treatment_Manager (void)
 {
-    Usart1Send(a);
+    int some_err = 0;    
+    resp_e resp = resp_ok;
+
+    printf("\n-- Testing Treatment Manager --\n");
+    printf("-- treat in standby\n");
+    for (int i = 0; i < 20; i++)
+        Treatment_Manager();
+
+    if (treat_state != TREATMENT_STANDBY)
+        some_err = 1;
+
+    if (!some_err)
+    {
+        printf("-- treat to running on square\n");
+        Treatment_SetMode_Str("square");
+        Treatment_Start();
+        
+        for (int i = 0; i < 20; i++)
+            Treatment_Manager();
+
+        if (treat_state != TREATMENT_SQUARE_RUNNING)
+            some_err = 1;
+        
+    }
+
+    if (!some_err)        
+    {
+        printf("-- treat to stop from square\n");
+        Treatment_Stop();
+        
+        Treatment_Manager();
+        if (treat_state != TREATMENT_STOPPING)
+            some_err = 1;
+
+        if (!some_err)
+        {
+            for (int i = 0; i < 20; i++)
+                Treatment_Manager();            
+            
+            if (treat_state != TREATMENT_STANDBY)
+                some_err = 1;
+        }        
+    }
+
+    if (!some_err)
+    {
+        printf("-- treat to running on sinus\n");
+        Treatment_SetMode_Str("sinus");
+        Treatment_Start();
+        
+        for (int i = 0; i < 20; i++)
+            Treatment_Manager();
+
+        if (treat_state != TREATMENT_SINUS_RUNNING)
+            some_err = 1;
+        
+    }
+
+    if (!some_err)        
+    {
+        printf("-- treat to stop from sinus\n");
+        Treatment_Stop();
+        
+        Treatment_Manager();
+        if (treat_state != TREATMENT_STOPPING)
+            some_err = 1;
+
+        if (!some_err)
+        {
+            for (int i = 0; i < 20; i++)
+                Treatment_Manager();            
+            
+            if (treat_state != TREATMENT_STANDBY)
+                some_err = 1;
+        }        
+    }
+    
+    printf("Testing Treatment Manager: ");
+    if (some_err)
+        PrintERR();
+    else
+        PrintOK();
+    
 }
 
 
+// Module Mocked Functions -----------------------------------------------------
 void ChangeLed (unsigned char number)
 {
     printf("change led to %d bips\n", number);

@@ -36,7 +36,7 @@ typedef struct {
     unsigned short freq_dec;
     polarity_e polarity;
     mode_e mode;
-    unsigned char intensity;
+    unsigned short intensity;
     unsigned char threshold;
     unsigned char gain;
     

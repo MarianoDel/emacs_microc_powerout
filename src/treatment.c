@@ -30,7 +30,7 @@ typedef enum {
     TREATMENT_SINUS_RUNNING,
     TREATMENT_STOPPING
 
-} treatment_t;
+} treatment_e;
 
 
 
@@ -39,7 +39,7 @@ typedef enum {
 
 // Globals ---------------------------------------------------------------------
 treatment_conf_t treatment_conf;
-treatment_t treat_state = 0;
+treatment_e treat_state = 0;
 
 
 // Module Private Functions ----------------------------------------------------
@@ -184,14 +184,17 @@ resp_e Treatment_SetPolarity_Str (char * str)
     if (!strncmp(str, "pos", sizeof("pos") - 1))
     {
         treatment_conf.polarity = POLARITY_POS;
+        resp = resp_ok;
     }
     else if (!strncmp(str, "neg", sizeof("neg") - 1))
     {
-        treatment_conf.polarity = POLARITY_NEG;        
+        treatment_conf.polarity = POLARITY_NEG;
+        resp = resp_ok;        
     }
     else if (!strncmp(str, "alt", sizeof("alt") - 1))
     {
-        treatment_conf.polarity = POLARITY_ALT;        
+        treatment_conf.polarity = POLARITY_ALT;
+        resp = resp_ok;        
     }
 
     return resp;
@@ -205,10 +208,12 @@ resp_e Treatment_SetMode_Str (char * str)
     if (!strncmp(str, "square", sizeof("square") - 1))
     {
         treatment_conf.mode = MODE_SQUARE;
+        resp = resp_ok;        
     }
     else if (!strncmp(str, "sinus", sizeof("sinus") - 1))
     {
         treatment_conf.mode = MODE_SINUS;
+        resp = resp_ok;        
     }
 
     return resp;
