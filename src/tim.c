@@ -358,6 +358,46 @@ void TIM5_Update_CH2 (unsigned short a)
 }
 
 
+///////////////////////
+// Timer 6 Functions //
+///////////////////////
+void TIM6_Init(void)
+{
+//    Counter Register (TIMx_CNT)
+//    Prescaler Register (TIMx_PSC)
+//    Auto-Reload Register (TIMx_ARR)
+//    The counter clock frequency CK_CNT is equal to fCK_PSC / (PSC[15:0] + 1)
+//    Activate with ints
+
+    //---- Clk ----//
+    if (!RCC_TIM6_CLK)
+        RCC_TIM6_CLKEN;
+
+    //--- Config ----//
+    TIM6->ARR = 1000;
+    TIM6->CNT = 0;
+    TIM6->PSC = 63;
+    TIM6->EGR = TIM_EGR_UG; //update registers
+
+    // Enable timer with ints
+    TIM6->DIER |= TIM_DIER_UIE;
+    // TIM6->CR1 |= TIM_CR1_CEN;
+
+    // NVIC enable for timer 6
+    NVIC_EnableIRQ(TIM6_IRQn);
+    NVIC_SetPriority(TIM6_IRQn, 10);
+}
+
+
+void TIM6_Change (unsigned short new_arr, unsigned short new_psc)
+{
+    TIM6->CR1 &= TIM_CR1_CEN;
+    TIM6->ARR = new_arr;
+    TIM6->PSC = new_psc;
+    TIM6->CR1 |= TIM_CR1_CEN;
+}
+
+
 void TIM7_IRQHandler (void)	//1mS
 {
     if (TIM7->SR & 0x01)

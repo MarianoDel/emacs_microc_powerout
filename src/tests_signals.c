@@ -10,10 +10,9 @@
 // Includes Modules for tests --------------------------------------------------
 #include "signals.h"
 #include "signals_defs.h"
-#include "tim.h"
-#include "dsp.h"
+#include "treatment.h"
 
-#include "antennas_defs.h"
+
 
 // helper modules
 #include "tests_ok.h"
@@ -40,339 +39,330 @@ extern void Signals_Setup_Phase_Accumulator (unsigned char freq_int,
 
 
 // Globals ---------------------------------------------------------------------
-short v_duty_ch1 [SIZEOF_SIGNALS] = { 0 };
-short v_error_ch1 [SIZEOF_SIGNALS] = { 0 };
-short v_sp_ch1 [SIZEOF_SIGNALS] = { 0 };
 
-short v_duty_ch2 [SIZEOF_SIGNALS] = { 0 };
-short v_error_ch2 [SIZEOF_SIGNALS] = { 0 };
-short v_sp_ch2 [SIZEOF_SIGNALS] = { 0 };
-
-short v_duty_ch3 [SIZEOF_SIGNALS] = { 0 };
-short v_error_ch3 [SIZEOF_SIGNALS] = { 0 };
-short v_sp_ch3 [SIZEOF_SIGNALS] = { 0 };
-
-short v_duty_ch4 [SIZEOF_SIGNALS] = { 0 };
-short v_error_ch4 [SIZEOF_SIGNALS] = { 0 };
-short v_sp_ch4 [SIZEOF_SIGNALS] = { 0 };
 
 
 // Module Functions to Test ----------------------------------------------------
-void Test_PI_Functions (void);
-void Test_PI_Simul (void);
-void Test_Generate_Setup (void);
-void Test_Generate_All_Channels (void);
-void Test_Set_Channel_PI_Parameters (void);
-void Test_Setup_Phase_And_Increment (void);
+void Test_Signals_Timers_Calc_Single_Freq (void);
+void Test_Signals_Timers_Calc_All_Allowed_Freqs (void);
+void Test_Signals_Timers_Calc_All_Integer_Freqs (void);
+
+void Test_Signals_Square (void);
+void Test_Signals_Sinusoidal (void);
 
 
 // Module Auxiliary Functions --------------------------------------------------
 
 
 // Tests Module Auxiliary or General Functions ---------------------------------
+// Mocked Functions Declaration ------------------------------------------------
+unsigned char Timer_Signal_Ended (void);
+void Timer_Signal_Reset (void);
+void Timer_Signal_Set (void);
+void Signals_Set_Rising_Ouput (treatment_conf_t * td);
+void Signals_Set_Falling_Ouput (treatment_conf_t * td);
+void Signals_Get_High_Current (void);
+void Signals_Get_Low_Current (void);
+
+unsigned char Timer_Sine_Signal_Ended (void);
+void Timer_Sine_Signal_Reset (void);
+void Timer_Sine_Signal_Set (void);
+
 
 
 // Module Functions ------------------------------------------------------------
 int main (int argc, char *argv[])
 {
-    // Test_PI_Functions ();
-    // Test_PI_Simul ();
-    // Test_Generate_Setup ();
-    // Test_Generate_All_Channels ();
-    // Test_Set_Channel_PI_Parameters ();
-    Test_Setup_Phase_And_Increment ();    
+    // Test_Signals_Timers_Calc_Single_Freq ();
+
+    // Test_Signals_Timers_Calc_All_Allowed_Freqs ();
+
+    // Test_Signals_Timers_Calc_All_Integer_Freqs ();
+
+    // Test_Signals_Square ();
+
+    Test_Signals_Sinusoidal ();    
 
     return 0;
 }
 
 
-extern const unsigned short * p_table_inphase;
-extern const unsigned short * p_table_outphase;
-extern pi_data_obj_t pi_ch1;
-extern pi_data_obj_t pi_ch2;
-extern pi_data_obj_t pi_ch3;
-extern pi_data_obj_t pi_ch4;
-extern unsigned short signal_index;
-void Test_Generate_Setup (void)
+void Test_Signals_Timers_Calc_Single_Freq (void)
 {
-    int pointers_are_null = 0;
-    int some_error = 0;
-    
-    if ((p_table_inphase == NULL) &&
-        (p_table_outphase == NULL))
-        pointers_are_null = 1;
+    printf("Testing Timers Calcs...\n micro Freq: 64MHz\n");
 
-    signal_index = 1;
-    Signals_Setup_All_Channels ();
+    resp_e resp;
+    timers_data_st td;
 
-    printf("pointer signal assigment: ");
-    if ((p_table_inphase != NULL) &&
-        (p_table_outphase != NULL) &&
-        (pointers_are_null))
-        PrintOK();
-    else
-        PrintERR();
+    // set single frequency to test
+    td.freq_int = 320;
+    td.freq_dec = 0;
 
-    printf("pointer index: ");
-    if (!signal_index)
-        PrintOK();
-    else
-        PrintERR();    
-    
-}
+    resp = Signals_Timers_Calculation (&td);
 
-
-extern signals_struct_t global_signals;
-void Test_Set_Channel_PI_Parameters (void)
-{
-    antenna_st my_ant;
-    // unsigned char antenna_index = 0;
-    // unsigned char antenna_index = 6;
-    unsigned char antenna_index = 8;
-    
-    TSP_Get_Know_Single_Antenna (&my_ant, antenna_index);
-    
-    Signals_Set_Channel_PI_Parameters (0, &my_ant);
-
-    printf("global_signals params:\n");
-    printf(" ki: %d\n", global_signals.ki_ch1);
-    printf(" kp: %d\n", global_signals.kp_ch1);
-    printf(" max_c: %d\n", global_signals.max_c_ch1);           
-}
-
-
-void Test_Setup_Phase_And_Increment (void)
-{
-    unsigned char freq_int = 0;
-    unsigned char freq_dec = 50;
-    unsigned short phase_a = 0;
-    
-    for (int i = 0; i < 200; i += 10)
+    if (resp == resp_ok)
     {
-        freq_int = i;
-        Signals_Setup_Phase_Accumulator(freq_int, freq_dec, &phase_a);
-
-        float eff_freq = phase_a * 7000.0 / (256 * 256);
-        printf("estimated for sampling 7000Hz freq: %f\n", eff_freq);
-        printf("with %02d.%02dHz phase acc: %d\n\n",
-               freq_int,
-               freq_dec,
-               phase_a);
-    }
-
-}
-
-
-void Test_Generate_All_Channels (void)
-{
-    
-    Signals_Setup_All_Channels();
-
-    for (int i = 0; i < (SIZEOF_SIGNALS - 1); i++)
-    {
-        timer1_seq_ready = 1;
-        Signals_Generate_All_Channels ();
-
-        // save ch1 data
-        v_duty_ch1[i] = pi_ch1.last_d;
-        v_sp_ch1[i] = pi_ch1.setpoint;
-        v_error_ch1[i] = pi_ch1.setpoint - pi_ch1.sample;
-
-        // save ch2 data
-        v_duty_ch2[i] = pi_ch2.last_d;
-        v_sp_ch2[i] = pi_ch2.setpoint;
-        v_error_ch2[i] = pi_ch2.setpoint - pi_ch2.sample;
-
-        // save ch3 data
-        v_duty_ch3[i] = pi_ch3.last_d;
-        v_sp_ch3[i] = pi_ch3.setpoint;
-        v_error_ch3[i] = pi_ch3.setpoint - pi_ch3.sample;
-
-        // save ch4 data
-        v_duty_ch4[i] = pi_ch4.last_d;
-        v_sp_ch4[i] = pi_ch4.setpoint;
-        v_error_ch4[i] = pi_ch4.setpoint - pi_ch4.sample;
-        
-    }
-
-    ///////////////////////////
-    // Backup Data to a file //
-    ///////////////////////////
-    FILE * file = fopen("data.txt", "w");
-
-    if (file == NULL)
-    {
-        printf("data file not created!\n");
-        return;
-    }
-
-    Vector_Short_To_File (file, "duty", v_duty_ch1, SIZEOF_SIGNALS);
-    Vector_Short_To_File (file, "error", v_error_ch1, SIZEOF_SIGNALS);
-    Vector_Short_To_File (file, "setpoint", v_sp_ch1, SIZEOF_SIGNALS);
-    printf("\nRun by hand python3 simul_outputs.py\n");
-    
-}
-
-
-void Test_PI_Functions (void)
-{
-    printf("Testing PI roof settings: ");
-
-    pi_data_obj_t pi;
-    pi.kp = 5;
-    pi.ki = 5;
-    pi.last_d = 100;
-    pi.error_z1 = 100;
-
-    PI_roof_Flush(&pi);
-        
-    if ((pi.last_d != 0) ||
-        (pi.error_z1 != 0))
-    {
-        PrintERR();
+        printf("psc: %d arr: %d arr_4: %d\n", td.psc, td.arr, td.arr_div_4);
+        unsigned int clk = 64000000;
+        unsigned int tclk = clk / (td.psc + 1);
+        float ticks = 1. / tclk;
+        float fget = 1. / (td.arr_div_4 * 4 * ticks);
+        printf("frequency getted: %f\n", fget);
     }
     else
-        PrintOK();
-
-    pi.kp = 5;
-    pi.ki = 5;
-    PI_roof_Flush(&pi);
-        
-    pi.setpoint = 1000;        
-    for (int i = 0; i < 1000; i++)
-    {
-        pi.sample = pi.last_d;
-        PI_roof(&pi);
-    }
-    printf("pi roof last_d: %d error_z1: %d\n", pi.last_d, pi.error_z1);
-    
-    printf("Testing PI roof performance: ");    
-    if ((pi.last_d != 0) ||
-        (pi.error_z1 != 1))
-    {
-        PrintERR();
-    }
-    else
-        PrintOK();
+        printf("error on calcs!\n");
     
 }
 
 
-void Test_PI_Simul (void)
+void Test_Signals_Timers_Calc_All_Allowed_Freqs (void)
 {
-    printf("\nTest PI and simulate\n");
+    printf("Testing Timers Calcs...\n micro Freq: 64MHz\n");
 
-    short vduty [1000] = { 0 };
-    short verror [1000] = { 0 };
-    short vsp [1000] = { 0 };
+    resp_e resp;
+    timers_data_st td;
 
-    pi_data_obj_t pi;    
-    pi.kp = 10;
-    pi.ki = 10;
-    PI_roof_Flush(&pi);
-        
-    pi.setpoint = 1000;        
-    for (int i = 0; i < 1000; i++)
+    for (int i = 1; i < 1000; i++)
     {
-        pi.sample = pi.last_d;
-        PI_roof(&pi);
+        unsigned int inte = i / 10;
+        td.freq_int = inte;
+        td.freq_dec = i - inte * 10;
+        // printf("%d.%01d\n", td.freq_int, td.freq_dec);
 
-        vduty[i] = pi.last_d;
-        verror[i] = pi.error_z1;
-        vsp[i] = pi.setpoint;
-    }
-    
-    printf("pi roof last_d: %d error_z1: %d\n", pi.last_d, pi.error_z1);
-    
-    
-    ///////////////////////////
-    // Backup Data to a file //
-    ///////////////////////////
-    FILE * file = fopen("data.txt", "w");
+        resp = Signals_Timers_Calculation (&td);
 
-    if (file == NULL)
-    {
-        printf("data file not created!\n");
-        return;
-    }
-
-    Vector_Short_To_File (file, "duty", vduty, 1000);
-    Vector_Short_To_File (file, "error", verror, 1000);
-    Vector_Short_To_File (file, "setpoint", vsp, 1000);
-    printf("\nRun by hand python3 simul_outputs.py\n");
-
+        if (resp == resp_ok)
+        {
+            printf("psc: %d arr: %d arr_4: %d\n", td.psc, td.arr, td.arr_div_4);
+            unsigned int clk = 64000000;
+            unsigned int tclk = clk / (td.psc + 1);
+            float ticks = 1. / tclk;
+            float fget = 1. / (td.arr_div_4 * 4 * ticks);
+            printf("frequency set: %d.%01d getted: %f\n",
+                   td.freq_int,
+                   td.freq_dec,
+                   fget);
+        }
+        else
+        {
+            printf("error on calcs!\n");
+            break;
+        }
+    }    
 }
+
+
+void Test_Signals_Timers_Calc_All_Integer_Freqs (void)
+{
+    printf("Testing Timers Calcs...\n micro Freq: 64MHz\n");
+
+    resp_e resp;
+    timers_data_st td;
+
+    td.freq_dec = 0;
+    for (int i = 1; i < 320; i++)
+    {
+        td.freq_int = i;
+        // printf("%d.%01d\n", td.freq_int, td.freq_dec);
+
+        resp = Signals_Timers_Calculation (&td);
+
+        if (resp == resp_ok)
+        {
+            printf("psc: %d arr: %d arr_4: %d\n", td.psc, td.arr, td.arr_div_4);
+            unsigned int clk = 64000000;
+            unsigned int tclk = clk / (td.psc + 1);
+            float ticks = 1. / tclk;
+            float fget = 1. / (td.arr_div_4 * 4 * ticks);
+            printf("frequency set: %d.%01d getted: %f\n",
+                   td.freq_int,
+                   td.freq_dec,
+                   fget);
+        }
+        else
+        {
+            printf("error on calcs!\n");
+            break;
+        }
+    }    
+}
+
+
+void Test_Signals_Square (void)
+{
+    int loops = 2;
+    printf("Testing Signals_Square, only few loops: %d\n", loops);
+
+    resp_e resp;
+    timers_data_st td;
+    treatment_conf_t signal_config;
+
+    signal_config.freq_int = 10;
+    signal_config.freq_dec = 9;
+
+    Timer_Signal_Set();
+    for (int i = 0; i < (loops * 4) + 1; i++)
+    {
+        resp = Signals_Square (&signal_config);
+        if (resp != resp_continue)
+        {
+            printf("looping error on: %d\n", i);
+            break;
+        }
+    }
+
+    printf("\n");
+}
+
+
+void Test_Signals_Sinusoidal (void)
+{
+    int loops = 4;
+    int table_size = 5;
+    printf("Testing on Signals_Sinusoidal, only few loops: %d\n", loops);
+
+    resp_e resp;
+    timers_data_st td;
+    treatment_conf_t signal_config;
+
+    signal_config.freq_int = 10;
+    signal_config.freq_dec = 9;
+
+    Timer_Sine_Signal_Set();
+    for (int i = 0; i < (loops * table_size); i++)
+    {
+        resp = Signals_Sinusoidal (&signal_config);
+        if (resp != resp_continue)
+        {
+            printf("looping error on: %d\n", i);
+            break;
+        }
+    }
+
+    printf("\n");
+}
+
+
 
 
 // Mocked Module Functions -----------------------------------------------------
-void TIM8_Update_CH3 (unsigned short a)
+unsigned char timer_ended = 0;
+unsigned char Timer_Signal_Ended (void)
 {
-    printf("HL CH1: %d\n", a);
-}
-
-void TIM8_Update_CH4 (unsigned short a)
-{
-    printf("LR CH1: %d\n", a);
-}
-
-void TIM8_Update_CH2 (unsigned short a)
-{
-    printf("HL CH2: %d\n", a);
-}
-
-void TIM8_Update_CH1 (unsigned short a)
-{
-    printf("LR CH2: %d\n", a);
-}
-
-void TIM4_Update_CH2 (unsigned short a)
-{
-    printf("HL CH3: %d\n", a);
-}
-
-void TIM4_Update_CH3 (unsigned short a)
-{
-    printf("LR CH3: %d\n", a);
-}
-
-void TIM5_Update_CH1 (unsigned short a)
-{
-    printf("HL CH4: %d\n", a);
-}
-
-void TIM5_Update_CH2 (unsigned short a)
-{
-    printf("LR CH4: %d\n", a);
-}
-
-void UpdateLed (void)
-{
-}
-
-void UpdateBuzzer (void)
-{
-}
-
-void UpdateRaspberryMessages (void)
-{
-}
-
-void Error_SetStatus (unsigned char error, unsigned char channel)
-{
-    error <<= 4;
-    error += channel + 1;
-    printf("error: 0x%02x\n", error);
-}
-
-void Led1_On (void)
-{
-    // printf("Led1 -> ON\n");
+    return timer_ended;
 }
 
 
-void Led1_Off (void)
+void Timer_Signal_Reset (void)
 {
-    // printf("Led1 -> OFF\n");    
+    timer_ended = 0;
+}
+
+
+void Timer_Signal_Set (void)
+{
+    timer_ended = 1;
+}
+
+
+unsigned char timer_sine_ended = 0;
+unsigned char Timer_Sine_Signal_Ended (void)
+{
+    return timer_sine_ended;
+}
+
+
+void Timer_Sine_Signal_Reset (void)
+{
+    timer_sine_ended = 0;
+}
+
+
+void Timer_Sine_Signal_Set (void)
+{
+    timer_sine_ended = 1;
+}
+
+
+void Signals_Set_Rising_Ouput (treatment_conf_t * td)
+{
+    printf("/");
+    Timer_Signal_Set();
+}
+
+
+void Signals_Set_Falling_Ouput (treatment_conf_t * td)
+{
+    printf("\\");
+    Timer_Signal_Set();    
+}
+
+
+void Signals_Get_High_Current (void)
+{
+    printf("-");
+    Timer_Signal_Set();    
+}
+
+
+void Signals_Get_Low_Current (void)
+{
+    printf("_");
+    Timer_Signal_Set();    
+}
+
+
+unsigned char sinusoidal_cut = 0;
+void Signal_Set_Sinusoidal_Cut (void)
+{
+    sinusoidal_cut = 1;
+}
+
+
+unsigned char Signal_Get_Sinusoidal_Cut (void)
+{
+    return sinusoidal_cut;
+}
+
+
+int report_high = 0;
+int high_cnt = 0;
+int report_low = 0;
+int low_cnt = 0;
+void Signals_Set_Sinusoidal_High (treatment_conf_t * td, unsigned short value)
+{
+    Timer_Sine_Signal_Set ();
+
+    if (!report_low)
+    {
+        printf("low_cnt: %d high value: %d\n", low_cnt, value);
+        low_cnt = 0;
+        report_low = 1;
+        report_high = 0;
+    }
+    // else
+    //     printf(" high_cnt: %d high value: %d\n", high_cnt, value);
+    
+    high_cnt++;
+
+}
+
+
+void Signals_Set_Sinusoidal_Low (treatment_conf_t * td, unsigned short value)
+{
+    Timer_Sine_Signal_Set ();    
+
+    if (!report_high)
+    {
+        printf("high_cnt: %d high value: %d\n", high_cnt, value);
+        high_cnt = 0;       
+        report_high = 1;
+        report_low = 0;
+    }
+    // else
+    //     printf(" low_cnt: %d low value: %d\n", low_cnt, value);
+    
+    low_cnt++;
 }
 
 //--- end of file ---//

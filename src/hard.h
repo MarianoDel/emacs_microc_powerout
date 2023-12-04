@@ -131,6 +131,8 @@
 
 // PC1 PC2 PC3 NC
 
+// PC4 Analog Channel 14 (NTC_10K)
+
 // PC6 NC
 
 // PC7 Out or Alternative TIM8_CH2

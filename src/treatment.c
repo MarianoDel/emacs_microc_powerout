@@ -57,6 +57,7 @@ void Treatment_Manager (void)
             if (treatment_conf.mode == MODE_SQUARE)
             {
                 Usart1Send("starting square\r\n");
+                Signals_Square_Reset ();
                 ChangeLed(LED_TREATMENT_SQUARE_RUNNING);
                 treat_state = TREATMENT_SQUARE_RUNNING;
             }
