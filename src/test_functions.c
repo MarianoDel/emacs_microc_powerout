@@ -84,10 +84,19 @@ void TF_Led (void)
     while (1)
     {
         if (LED)
+        {
+            // for tests in other board
+            GPIOA->BSRR = 0x10000000;
             LED_OFF;
+        }
         else
+        {
+            // for tests in other board
+            GPIOA->BSRR = 0x00001000;            
             LED_ON;
+        }
 
+        
         Wait_ms(200);
     }
 }

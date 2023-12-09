@@ -15,7 +15,7 @@
 
 
 // Module Private Types Constants and Macros -----------------------------------
-#define USE_EXTI_LINES
+// #define USE_EXTI_LINES
 
 
 #define RCC_GPIOA_CLK    (RCC->APB2ENR & 0x00000004)
@@ -46,30 +46,6 @@
 
 
 // Module Functions ------------------------------------------------------------
-
-
-//--- Tamper config ---//
-void Tamper_Config(void)
-{
-	unsigned long temp;
-
-	//--- GPIOB ---//
-	//--- Clock ---//
-	if (!(RCC->APB2ENR & 0x00000008))
-		RCC->APB2ENR |= 0x00000008;
-
-	//--- Config pines ---//
-	temp = GPIOB->CRH;
-	temp &= 0xFF0FFFFF;
-	temp |= 0x00800000;
-	GPIOB->CRH = temp;
-	GPIOB->BSRR = 0x00002000;
-}
-
-
-
-
-
 //------- GPIO REGISTERS ----------//
 //
 //	GPIOx->CRL	pin 7 - 0

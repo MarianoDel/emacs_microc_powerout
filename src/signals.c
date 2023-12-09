@@ -70,7 +70,7 @@ extern volatile unsigned short adc_ch[];
 
 
 // Globals ---------------------------------------------------------------------
-#define TABLE_SIZE    5
+#define TABLE_SIZE    256
 const unsigned short sinusoidal_table [] = {25,50,75,100,125,150,174,199,224,248,
                                                     272,296,320,344,368,391,414,437,459,482,
                                                     504,525,547,568,589,609,629,648,668,687,
@@ -132,6 +132,7 @@ resp_e Signals_Square (treatment_conf_t * pconf)
         {
             resp = resp_continue;
             // set timers here!!!
+            Timer_Set_Registers (td.psc, td.arr_div_4);
             square_state++;
         }
         break;
@@ -207,6 +208,7 @@ resp_e Signals_Sinusoidal (treatment_conf_t * pconf)
         {
             resp = resp_continue;
             // set timers square_cut here!!!
+            Timer_Set_Registers (td.psc, td.arr);
 
             square_cut_state = SQUARE_NO_CUTTING;
             sine_state++;

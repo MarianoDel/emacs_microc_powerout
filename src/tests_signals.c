@@ -218,7 +218,7 @@ void Test_Signals_Square (void)
 void Test_Signals_Sinusoidal (void)
 {
     int loops = 4;
-    int table_size = 5;
+    int table_size = 256;
     printf("Testing on Signals_Sinusoidal, only few loops: %d\n", loops);
 
     resp_e resp;
@@ -354,7 +354,7 @@ void Signals_Set_Sinusoidal_Low (treatment_conf_t * td, unsigned short value)
 
     if (!report_high)
     {
-        printf("high_cnt: %d high value: %d\n", high_cnt, value);
+        printf("high_cnt: %d low value: %d\n", high_cnt, value);
         high_cnt = 0;       
         report_high = 1;
         report_low = 0;
@@ -363,6 +363,22 @@ void Signals_Set_Sinusoidal_Low (treatment_conf_t * td, unsigned short value)
     //     printf(" low_cnt: %d low value: %d\n", low_cnt, value);
     
     low_cnt++;
+}
+
+void Timer_Set_Registers (unsigned short psc, unsigned short arr)
+{
+    if (arr == 0)
+        return;
+    
+    unsigned int fclk = 64000000;
+    fclk = fclk / (psc + 1);
+    unsigned int step_us = arr * 1000000 / fclk;
+    
+    float freq = (float) fclk / (float) arr;
+
+    
+    printf(" setting timer scalers psc: %d arr: %d\n", psc, arr);
+    printf(" step time: %dus f1: %.1fHz f4: %.1fHz\n", step_us, freq, freq / 4);
 }
 
 //--- end of file ---//
