@@ -113,6 +113,8 @@ void Test_Generate_Square (void)
 #define SINUSOIDAL_LOOPS    2
 #define SINUSOIDAL_SIZE    256
 short vsine [SINUSOIDAL_SIZE * SINUSOIDAL_LOOPS] = { 0 };
+int cutting_roof;
+int cutting_cnt = 0;
 void Test_Generate_Sinusoidal (void)
 {
     printf("Sinusoidal Generation...\n");
@@ -123,6 +125,8 @@ void Test_Generate_Sinusoidal (void)
 
     signal_config.freq_int = 10;
     signal_config.freq_dec = 9;
+
+    cutting_roof = (SINUSOIDAL_SIZE >> 4);
 
     // Signal_Reset_Sinusoidal_Cut();
     Timer_Sine_Signal_Set();
@@ -230,6 +234,7 @@ unsigned char sinusoidal_cut = 0;
 void Signal_Set_Sinusoidal_Cut (void)
 {
     sinusoidal_cut = 1;
+    vsine[cnt] = 0;
 }
 
 
@@ -241,6 +246,19 @@ void Signal_Reset_Sinusoidal_Cut (void)
 
 unsigned char Signal_Get_Sinusoidal_Cut (void)
 {
+    // for square cuts
+    if (cutting_cnt < cutting_roof)
+        cutting_cnt++;
+    else
+    {
+        printf("  cutting loop to 0 on: %d\n", cutting_cnt);
+        cutting_cnt = 0;
+        Timer_Signal_Set();
+    }
+
+    if (sinusoidal_cut)    // up cnt here
+        Timer_Sine_Signal_Set ();
+    
     return sinusoidal_cut;
 }
 
@@ -265,7 +283,7 @@ void Signals_Set_Sinusoidal_Low (treatment_conf_t * td, unsigned short value)
     val = val / 100;
     vsine[cnt] = val;
 
-    // printf(" low cnt: %d value: %d\n", cnt, value);    
+    // printf(" low cnt: %d value: %d\n", cnt, value);
 }
 
 

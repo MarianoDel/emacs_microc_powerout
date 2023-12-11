@@ -8,6 +8,7 @@ Vmax = 1023
 
 s_sin_rect = np.zeros(samples)
 s_sin_rect_outphase = np.zeros(samples)
+s_sin_full = np.zeros(samples)
 
 s_triang = np.zeros(samples)
 s_triang_outphase = np.zeros(samples)
@@ -27,9 +28,16 @@ for i in range(np.size(s_sin_rect)):
     if s_sin_rect_outphase[i] < 0:
         s_sin_rect_outphase[i] = 0
 
+
+# Full wave Sinusoidal Assembly
+for i in range(np.size(s_sin_full)):
+    # full wave rectified sinusoidal
+    s_sin_full[i] = np.sin(np.pi*(i+1)/samples) * Vmax
+        
         
 s_sin_rect = s_sin_rect.astype(int)
 s_sin_rect_outphase = s_sin_rect_outphase.astype(int)
+s_sin_full = s_sin_full.astype(int)
 
 
 # Triangular Assembly
@@ -67,6 +75,24 @@ for i in range(np.size(s_sin_rect)):
             print (str(s_sin_rect[i]),end='')
         else:                
             print (str(s_sin_rect[i]) + ",\n",end='')
+            line += 1
+        
+print ("};")
+
+
+print ()
+print ()
+print ('--- SINUSOIDAL FULL WAVE ---')
+line = 1
+print ("{",end='')
+for i in range(np.size(s_sin_full)):
+    if i < ((line * qtty_per_line) - 1):
+        print (str(s_sin_full[i]) + ",",end='')
+    else:
+        if i == (np.size(s_sin_full) - 1):
+            print (str(s_sin_full[i]),end='')
+        else:                
+            print (str(s_sin_full[i]) + ",\n",end='')
             line += 1
         
 print ("};")
