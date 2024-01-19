@@ -73,8 +73,9 @@ SRC += ./src/hard.c
 SRC += ./src/dac.c
 
 # SRC += ./src/dsp.c
-# SRC += ./src/comms_from_rasp.c
-# SRC += ./src/treatment.c
+SRC += ./src/treatment.c
+SRC += ./src/signals.c
+SRC += ./src/comms.c
 # SRC += ./src/utils.c
 SRC += ./src/test_functions.c
 
@@ -223,32 +224,6 @@ tests_treatment:
 	gcov treatment.c -m
 
 
-tests_treat_all_chain:
-	# compile first modules in this test
-	# first module objects to test
-	# gcc -c src/treatment.c -I. $(INCDIR) $(DDEFS)
-	gcc -c src/treatment.c -I. $(INCDIR) $(DDEFS) -DTESTING_SHOW_INFO
-	gcc -c src/comms_from_rasp.c -I. $(INCDIR) $(DDEFS)
-	gcc -c src/utils.c -I. $(INCDIR)
-	gcc -c src/antennas.c -I. $(INCDIR) $(DDEFS)
-	gcc -c src/errors.c -I. $(INCDIR) $(DDEFS)
-	# gcc -c src/signals.c -I. $(INCDIR) $(DDEFS)
-	# gcc -c src/signals.c -I. $(INCDIR) $(DDEFS) -DTESTING_SHOW_INFO
-	# gcc -c src/signals.c -I. $(INCDIR) $(DDEFS) -DTESTING_SHOW_INFO_PI -DTESTING_SHOW_INFO_OPENLOOP
-	# gcc -c src/signals.c -I. $(INCDIR) $(DDEFS)  -DTESTING_SHOW_INFO_OPENLOOP -DTESTING_SHOW_INFO_OPENLOOP_INDEX
-	gcc -c src/signals.c -I. $(INCDIR) $(DDEFS) -DTESTING_SHOW_INFO -DTESTING_SHOW_INFO_OPENLOOP
-	# gcc -c src/signals.c -I. $(INCDIR) $(DDEFS) -DTESTING_SHOW_INFO -DTESTING_SHOW_INFO_INDEX_SP
-	gcc -c src/dsp.c -I. $(INCDIR) $(DDEFS)
-	# second auxiliary helper modules
-	gcc -c src/tests_ok.c -I $(INCDIR)
-	gcc -c src/tests_mock_usart.c -I $(INCDIR)
-	gcc -c src/tests_recursive_utils.c -I $(INCDIR)
-	gcc -c src/tests_vector_utils.c -I $(INCDIR)
-	gcc -c src/tests_know_antennas.c -I $(INCDIR)
-	gcc src/tests_treat_all_chain.c treatment.o comms_from_rasp.o utils.o antennas.o errors.o signals.o dsp.o tests_ok.o tests_mock_usart.o tests_recursive_utils.o tests_vector_utils.o tests_know_antennas.o -I $(INCDIR) $(DDEFS)
-	./a.out
-
-
 tests_comms:
 	# compile first modules in this test
 	# first module objects to test
@@ -270,9 +245,7 @@ tests_signals:
 	gcc -c src/dsp.c -I. $(INCDIR) $(DDEFS)
 	# second auxiliary helper modules
 	gcc -c src/tests_ok.c -I $(INCDIR)
-	gcc -c src/tests_vector_utils.c -I $(INCDIR)
-	gcc -c src/tests_know_antennas.c -I $(INCDIR)
-	gcc --coverage src/tests_signals.c signals.o dsp.o tests_ok.o tests_vector_utils.o tests_know_antennas.o -I $(INCDIR) $(DDEFS)
+	gcc --coverage src/tests_signals.c signals.o dsp.o tests_ok.o -I $(INCDIR) $(DDEFS)
 	./a.out
 	# process coverage
 	gcov signals.c -m
@@ -284,96 +257,10 @@ tests_signals_simul:
 	gcc -c src/signals.c -I. $(INCDIR) $(DDEFS)
 	gcc -c src/dsp.c -I. $(INCDIR) $(DDEFS)
 	# second auxiliary helper modules
-	gcc -c src/tests_know_antennas.c -I $(INCDIR)
 	gcc -c src/tests_ok.c -I $(INCDIR)
 	gcc -c src/tests_vector_utils.c -I $(INCDIR)
-	gcc -c src/tests_recursive_utils.c -I $(INCDIR)
-	gcc src/tests_signals_simul.c signals.o dsp.o tests_ok.o tests_know_antennas.o tests_vector_utils.o tests_recursive_utils.o -I $(INCDIR) $(DDEFS)
+	gcc src/tests_signals_simul.c signals.o dsp.o tests_ok.o tests_vector_utils.o -I $(INCDIR) $(DDEFS)
 	./a.out
-
-
-tests_signals_simul2:
-	# compile first modules in this test
-	# first module objects to test
-	gcc -c src/signals.c -I. $(INCDIR) $(DDEFS)
-	gcc -c src/dsp.c -I. $(INCDIR) $(DDEFS)
-	# second auxiliary helper modules
-	gcc -c src/tests_know_antennas.c -I $(INCDIR)
-	gcc -c src/tests_ok.c -I $(INCDIR)
-	gcc -c src/tests_vector_utils.c -I $(INCDIR)
-	gcc -c src/tests_recursive_utils.c -I $(INCDIR)
-	gcc src/tests_signals_simul2.c signals.o dsp.o tests_ok.o tests_know_antennas.o tests_vector_utils.o tests_recursive_utils.o -I $(INCDIR) $(DDEFS)
-	./a.out
-
-
-tests_signals_transform:
-	# compile first modules in this test
-	# first module objects to test
-	# gcc -c src/signals.c -I. $(INCDIR) $(DDEFS)
-	# gcc -c src/dsp.c -I. $(INCDIR) $(DDEFS)
-	# second auxiliary helper modules
-	gcc -c src/tests_know_antennas.c -I $(INCDIR)
-	gcc -c src/tests_ok.c -I $(INCDIR)
-	gcc -c src/tests_vector_utils.c -I $(INCDIR)
-	gcc -c src/tests_recursive_utils.c -I $(INCDIR)
-	gcc src/tests_signals_transform.c -lm tests_ok.o tests_know_antennas.o tests_vector_utils.o tests_recursive_utils.o -I $(INCDIR) $(DDEFS)
-	./a.out
-
-
-tests_signals_transform2:
-	# compile first modules in this test
-	# first module objects to test
-	# gcc -c src/signals.c -I. $(INCDIR) $(DDEFS)
-	# gcc -c src/dsp.c -I. $(INCDIR) $(DDEFS)
-	# second auxiliary helper modules
-	gcc -c src/tests_know_antennas.c -I $(INCDIR)
-	gcc -c src/tests_ok.c -I $(INCDIR)
-	gcc -c src/tests_vector_utils.c -I $(INCDIR)
-	gcc -c src/tests_recursive_utils.c -I $(INCDIR)
-	gcc src/tests_signals_transform2.c -lm tests_ok.o tests_know_antennas.o tests_vector_utils.o tests_recursive_utils.o -I $(INCDIR) $(DDEFS)
-	./a.out
-
-
-tests_signals_transform3:
-	# compile first modules in this test
-	# first module objects to test
-	# gcc -c src/signals.c -I. $(INCDIR) $(DDEFS)
-	# gcc -c src/dsp.c -I. $(INCDIR) $(DDEFS)
-	# second auxiliary helper modules
-	gcc -c src/tests_know_antennas.c -I $(INCDIR)
-	gcc -c src/tests_ok.c -I $(INCDIR)
-	gcc -c src/tests_vector_utils.c -I $(INCDIR)
-	gcc -c src/tests_recursive_utils.c -I $(INCDIR)
-	gcc src/tests_signals_transform3.c -lm tests_ok.o tests_know_antennas.o tests_vector_utils.o tests_recursive_utils.o -I $(INCDIR) $(DDEFS)
-	./a.out
-
-
-tests_antennas:
-	# compile first modules in this test
-	# first module objects to test
-	gcc -c --coverage src/antennas.c -I. $(INCDIR) $(DDEFS)
-	# gcc -c src/dsp.c -I. $(INCDIR) $(DDEFS)
-	# second auxiliary helper modules
-	gcc -c src/tests_ok.c -I $(INCDIR)
-	gcc -c src/tests_mock_usart.c -I $(INCDIR)
-	gcc -c src/tests_know_antennas.c -I $(INCDIR)
-	# gcc -c src/tests_vector_utils.c -I $(INCDIR)
-	gcc --coverage src/tests_antennas.c antennas.o tests_ok.o tests_mock_usart.o tests_know_antennas.o -I $(INCDIR) $(DDEFS)
-	./a.out
-	# process coverage
-	gcov antennas.c -m
-
-tests_comms_rasp:
-	# compile first modules in this test
-	gcc -c src/comms_from_rasp.c -I. $(INCDIR) -DSTM32F10X_HD
-	gcc -c src/treatment.c -I. $(INCDIR)
-	gcc -c src/utils.c -I. $(INCDIR)
-	# second auxiliary helper modules
-	gcc -c src/tests_ok.c -I $(INCDIR)
-	gcc -c src/tests_mock_usart.c -I $(INCDIR)
-	gcc src/tests_comms_rasp.c comms_from_rasp.o treatment.o utils.o tests_ok.o tests_mock_usart.o -I $(INCDIR) $(DDEFS)
-	./a.out
-
 
 
 # *** EOF ***

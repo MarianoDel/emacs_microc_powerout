@@ -259,7 +259,6 @@ resp_e Signals_Sinusoidal (treatment_conf_t * pconf)
     case SQUARE_NO_CUTTING:
         if (Timer_Signal_Ended())
         {
-            printf("  sq cutting on\n");            
             Timer_Signal_Reset();
             Signal_Set_Sinusoidal_Cut();
             square_cut_state++;
@@ -269,7 +268,6 @@ resp_e Signals_Sinusoidal (treatment_conf_t * pconf)
     case SQUARE_CUTTING:
         if (Timer_Signal_Ended())
         {
-            printf("  sq cutting off\n");
             Timer_Signal_Reset();
             Signal_Reset_Sinusoidal_Cut();
             square_cut_state = SQUARE_NO_CUTTING;

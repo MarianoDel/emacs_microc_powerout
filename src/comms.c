@@ -10,12 +10,12 @@
 // Includes --------------------------------------------------------------------
 #include "comms.h"
 #include "answers_defs.h"
-// #include "hard.h"
+#include "hard.h"
 // #include "adc.h"
 
 // #include "channels_defs.h"
 #include "usart.h"
-// #include "treatment.h"
+#include "treatment.h"
 // #include "utils.h"
 // #include "antennas.h"
 
@@ -44,6 +44,12 @@ static void Comms_Messages (char * msg_str);
 
 
 // Module Functions ------------------------------------------------------------
+unsigned char Comms_Rpi_Answering (void)
+{
+    return 1;
+}
+
+
 void Comms_Update (void)
 {
     if (Usart1HaveData())

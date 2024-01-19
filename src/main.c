@@ -14,19 +14,18 @@
 #include "hard.h"
 
 #include "adc.h"
+#include "dma.h"
+#include "dac.h"
 // #include "tim.h"
 #include "gpio.h"
-// #include "usart.h"
-// #include "dma.h"
+#include "usart.h"
 
 // #include "comms.h"
 #include "test_functions.h"
-
-// #include "antennas.h"
+#include "treatment.h"
 // #include "comms_channels.h"
 // #include "parameters.h"
-// #include "tamper_funcs.h"
-// #include "flash_program.h"
+
 
 #include <stdio.h>
 #include <string.h>
@@ -83,25 +82,25 @@ int main (void)
         SysTickError();
 
     // Hardware Tests
-    TF_Hardware_Tests ();
+    // TF_Hardware_Tests ();
 
     // --- main program inits. ---
     //-- DMA configuration.
-//     DMAConfig();
-//     DMA_ENABLE;
+    DMAConfig();
+    DMA_ENABLE;
     
-//     //-- ADC with DMA
-//     AdcConfig();
-//     ADC_START;
+    //-- ADC with DMA
+    AdcConfig();
+    // ADC_START;
 
-//     //-- Comms with rasp
-//     Usart1Config ();
+    //-- DAC init for signal generation
+    DAC_Config ();
+    
+    //-- Comms with rasp
+    Usart1Config ();
 
-//     //-- Comms with channels
-//     Usart2Config ();
-//     Usart3Config ();
-//     Uart4Config ();
-//     Uart5Config ();
+    //-- Comms with probes
+    // Usart3Config ();
 
 //     //-- PWM Timers    
 //     TIM8_Init();    // init timer 8 for ch1 & ch2 pwm output
@@ -112,70 +111,25 @@ int main (void)
 //     TIM1_Init();
 
     
-//     //-- Welcome Messages --------------------
-//     Usart1Send("\r\nInfinity Clinics Magnet Power Board -- powered by: Kirno International Llc\r\n");
-//     Wait_ms(100);
 
-// #ifdef HARD
-//     Usart1Send(HARD);
-//     Usart1Send("\r\n");
-//     Wait_ms(100);    
-// #else
-// #error	"No Hardware defined in hard.h file"
-// #endif
+    //-- Main Loop --------------------------
+    while (1)
+    {
+        // // update the antennas module states
+        // AntennaUpdateStates ();
 
-// #ifdef SOFT
-//     Usart1Send(SOFT);
-//     Usart1Send("\r\n");
-//     Wait_ms(100);    
-// #else
-// #error	"No Soft Version defined in hard.h file"
-// #endif
-//     //-- end of Welcome Messages ------------
+        // update the channels comms
+        // Comms_Channel1 ();
+        // Comms_Channel2 ();
+        // Comms_Channel3 ();
+        // Comms_Channel4 ();
 
-//     //-- Saved Config --------------------------
-//     // get saved config or create one for default
-//     if (pmem->tamper_config != 0xff)
-//     {
-//         //memory with valid data
-//         memcpy(&mem_conf, pmem, sizeof(parameters_typedef));
-//     }
-//     else
-//     {
-//         // Default mem config
-//         mem_conf.tamper_config = TAMPER_DISABLE;
-//     }
-//     //-- end of Saved Config --------------------------
+        // update treatment state
+        Treatment_Manager();
 
-//     //-- Check Tamper Status --------------------------
-//     Usart1Send("Tamper Status: ");
-//     tamper_state_e t;
-//     t = Tamper_GetStatus(&mem_conf);
-//     Usart1Send(Tamper_CodeToString(t));
-//     Usart1Send("\r\n");
-//     Wait_ms(100);
-//     //-- end of Check Tamper Status -------------------
-
-//     ChangeLed(LED_TREATMENT_STANDBY);
-
-//     //-- Main Loop --------------------------
-//     while (1)
-//     {
-//         // update the antennas module states
-//         AntennaUpdateStates ();
-
-//         // update the channels comms
-//         Comms_Channel1 ();
-//         Comms_Channel2 ();
-//         Comms_Channel3 ();
-//         Comms_Channel4 ();
-
-//         // update treatment state
-//         Treatment_Manager();
-
-//         // the update of led and buzzer on Treatment_Manager()
+        // the update of led and buzzer on Treatment_Manager()
         
-//     }
+    }
 }
 
 //--- End of Main ---//
@@ -231,7 +185,7 @@ void TimingDelay_Decrement(void)
 
     // Treatment_Timeouts ();
     
-    // HARD_Timeouts();
+    HARD_Timeouts();
     
     if (timer_standby)
         timer_standby--;

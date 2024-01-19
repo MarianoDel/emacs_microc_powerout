@@ -15,6 +15,7 @@
 #include "usart.h"
 #include "tim.h"
 
+#include "signals.h"
 #include "utils.h"
 
 
@@ -25,12 +26,21 @@
 
 // Private Types Constants and Macros ------------------------------------------
 typedef enum {
-    TREATMENT_STANDBY = 0,
+    TREATMENT_INIT = 0,
+    TREATMENT_STANDBY_NO_COMMS,
+    TREATMENT_STANDBY_WITH_COMMS,
     TREATMENT_SQUARE_RUNNING,
-    TREATMENT_SINUS_RUNNING,
+    TREATMENT_SINE_RUNNING,
     TREATMENT_STOPPING
 
 } treatment_e;
+
+
+typedef enum {
+    PROBE_NO_COMMS = 0,
+    PROBE_PLUGGED_WITH_COMMS
+
+} probe_comms_e;
 
 
 
@@ -40,6 +50,7 @@ typedef enum {
 // Globals ---------------------------------------------------------------------
 treatment_conf_t treatment_conf;
 treatment_e treat_state = 0;
+probe_comms_e probe_comm_state = 0;
 
 
 // Module Private Functions ----------------------------------------------------
@@ -50,7 +61,20 @@ void Treatment_Manager (void)
 {
     switch (treat_state)
     {
-    case TREATMENT_STANDBY:    // AND MEASUREMENTS
+    case TREATMENT_INIT:
+        ChangeLed_With_Timer (LED_TREATMENT_STANDBY, 4000);
+        treat_state++;
+        break;
+        
+    case TREATMENT_STANDBY_NO_COMMS:
+        if (Comms_Rpi_Answering())
+        {
+            ChangeLed_With_Timer (LED_TREATMENT_STANDBY, 0);
+            treat_state++;
+        }
+        break;
+        
+    case TREATMENT_STANDBY_WITH_COMMS:    // AND MEASUREMENTS        
         if (Treatment_Start_Flag ())
         {
             Treatment_Start_Flag_Reset ();
@@ -61,12 +85,18 @@ void Treatment_Manager (void)
                 ChangeLed(LED_TREATMENT_SQUARE_RUNNING);
                 treat_state = TREATMENT_SQUARE_RUNNING;
             }
-            else if (treatment_conf.mode == MODE_SINUS)
+            else if (treatment_conf.mode == MODE_SINE)
             {
-                Usart1Send("starting sinus\r\n");                
-                ChangeLed(LED_TREATMENT_SINUS_RUNNING);                
-                treat_state = TREATMENT_SINUS_RUNNING;
+                Usart1Send("starting sinusoidal\r\n");
+                ChangeLed(LED_TREATMENT_SINE_RUNNING);                
+                treat_state = TREATMENT_SINE_RUNNING;
             }            
+        }
+
+        if (!Comms_Rpi_Answering())
+        {
+            ChangeLed_With_Timer (LED_TREATMENT_STANDBY, 4000);
+            treat_state--;
         }
         break;
 
@@ -78,16 +108,20 @@ void Treatment_Manager (void)
             Treatment_Stop_Flag_Reset ();
             treat_state = TREATMENT_STOPPING;
         }
+
+        // go out if not comms?
         break;
         
-    case TREATMENT_SINUS_RUNNING:
-        Signals_Sinus (&treatment_conf);
+    case TREATMENT_SINE_RUNNING:
+        Signals_Sinusoidal (&treatment_conf);
 
         if (Treatment_Stop_Flag ())
         {
             Treatment_Stop_Flag_Reset ();            
             treat_state = TREATMENT_STOPPING;
         }
+
+        // go out if not comms?        
         break;
                 
     case TREATMENT_STOPPING:
@@ -96,13 +130,27 @@ void Treatment_Manager (void)
         Usart1Send("stopped\r\n");
 
         ChangeLed(LED_TREATMENT_STANDBY);
-        treat_state = TREATMENT_STANDBY;
+        treat_state = TREATMENT_STANDBY_WITH_COMMS;
         break;
 
     default:
-        treat_state = TREATMENT_STANDBY;
+        treat_state = TREATMENT_INIT;
         break;
-    }            
+    }
+
+    // check probe communications
+    switch (probe_comm_state)
+    {
+    case PROBE_NO_COMMS:
+        break;
+
+    case PROBE_PLUGGED_WITH_COMMS:
+        break;
+
+    default:
+        probe_comm_state = PROBE_NO_COMMS;
+        break;
+    }
 }
 
 
@@ -211,9 +259,9 @@ resp_e Treatment_SetMode_Str (char * str)
         treatment_conf.mode = MODE_SQUARE;
         resp = resp_ok;        
     }
-    else if (!strncmp(str, "sinus", sizeof("sinus") - 1))
+    else if (!strncmp(str, "sine", sizeof("sine") - 1))
     {
-        treatment_conf.mode = MODE_SINUS;
+        treatment_conf.mode = MODE_SINE;
         resp = resp_ok;        
     }
 

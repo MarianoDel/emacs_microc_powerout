@@ -127,6 +127,7 @@ void Test_Generate_Sinusoidal (void)
     signal_config.freq_dec = 9;
 
     cutting_roof = (SINUSOIDAL_SIZE >> 4);
+    // cutting_roof = SINUSOIDAL_SIZE * 2;    //no cuts
 
     // Signal_Reset_Sinusoidal_Cut();
     Timer_Sine_Signal_Set();
@@ -251,7 +252,7 @@ unsigned char Signal_Get_Sinusoidal_Cut (void)
         cutting_cnt++;
     else
     {
-        printf("  cutting loop to 0 on: %d\n", cutting_cnt);
+        // printf("  cutting loop to 0 on: %d\n", cutting_cnt);
         cutting_cnt = 0;
         Timer_Signal_Set();
     }

@@ -11,6 +11,17 @@
 #include "stm32f10x.h"
 
 
+// Module Private Types Constants and Macros -----------------------------------
+typedef enum
+{    
+    START_BLINKING = 0,
+    WAIT_TO_OFF,
+    WAIT_TO_ON,
+    WAIT_NEW_CYCLE
+} led_state_t;
+
+
+#define LED_DEFAULT_TIMER_OFF    2000
 // Externals -------------------------------------------------------------------
 
 
@@ -19,6 +30,7 @@
 led_state_t led_state = START_BLINKING;
 unsigned char blink = 0;
 unsigned char how_many_blinks = 0;
+unsigned short led_space_in_off = 0;
 volatile unsigned short timer_led = 0;
 
 
@@ -35,14 +47,30 @@ void HARD_Timeouts (void)
 
 }
 
-//cambia configuracion de bips del LED
+
+// change bips LED config and timer in off
+void ChangeLed_With_Timer (unsigned char how_many, unsigned short led_timer_off)
+{
+    how_many_blinks = how_many;
+    led_state = START_BLINKING;
+
+    if (led_timer_off)
+        led_space_in_off = led_timer_off;
+    else
+        led_space_in_off = LED_DEFAULT_TIMER_OFF;
+
+}
+
+
+// change bips LED 
 void ChangeLed (unsigned char how_many)
 {
     how_many_blinks = how_many;
     led_state = START_BLINKING;
 }
 
-//mueve el LED segun el estado del Programa
+
+// update the LED routine
 void UpdateLed (void)
 {
     switch (led_state)
@@ -81,7 +109,7 @@ void UpdateLed (void)
                 else
                 {
                     led_state = WAIT_NEW_CYCLE;
-                    timer_led = 2000;
+                    timer_led = led_space_in_off;
                 }
             }
             break;
@@ -99,75 +127,21 @@ void UpdateLed (void)
 }
 
 
-// void HARD_L1_ON (void)
-// {
-//     LED1_ON;
-// }
-
-
-// void HARD_L1_OFF (void)
-// {
-//     LED1_OFF;
-// }
-
-// unsigned char Led1_Is_On (void)
-// {
-//     return LED1;
-// }
-
-
-// void Led1_On (void)
-// {
-//     LED1_ON;
-// }
-
-
-// void Led1_Off (void)
-// {
-//     LED1_OFF;
-// }
-
-
-// unsigned char Tamper_Pin (void)
-// {
-//     return TAMPER_PIN;
-// }
-
-
-void Pb14_To_Output (void)
+unsigned char Led_Is_On (void)
 {
-    unsigned long temp;
-
-    temp = GPIOB->CRH;
-    temp &= 0xF0FFFFFF;
-    temp |= 0x02000000;
-    GPIOB->CRH = temp;
-    
+    return LED;
 }
 
 
-void Pb14_To_Input (void)
+void Led_On (void)
 {
-    unsigned long temp;
-
-    temp = GPIOB->CRH;
-    temp &= 0xF0FFFFFF;
-    temp |= 0x04000000;
-    GPIOB->CRH = temp;
-    
+    LED_ON;
 }
 
 
-// void Pb14_Off (void)
-// {
-//     PB14_OFF;
-// }
-
-
-// void Pb14_On (void)
-// {
-//     PB14_ON;
-// }
-
+void Led_Off (void)
+{
+    LED_OFF;
+}
 
 //--- end of file ---//

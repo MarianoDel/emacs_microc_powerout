@@ -42,8 +42,8 @@
 
 
 //--- Exported functions ---//
-void UpdateRaspberryMessages (void);
-void Raspberry_Report_Errors (unsigned char, unsigned short *);
-
+void Comms_Update (void);
+static void Comms_Messages (char * msg_str);
+unsigned char Comms_Rpi_Answering (void);
 
 #endif    /* _COMMS_H_ */

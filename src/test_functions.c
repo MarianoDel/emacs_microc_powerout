@@ -57,6 +57,7 @@ extern volatile unsigned short timer_standby;
 
 // Module Private Functions ----------------------------------------------------
 void TF_Led (void);
+void TF_Led_Timers (void);
 void TF_Led_Dac (void);
 
 // void TF_Usart1_Tx (void);
@@ -70,11 +71,12 @@ void TF_Adc_Usart1_Voltages (void);
 void TF_Hardware_Tests (void)
 {
     // TF_Led ();
+    TF_Led_Timers ();
     // TF_Led_Dac ();
 
     // TF_Usart1_Tx_String ();
     // TF_Adc_Usart1_Tx ();
-    TF_Adc_Usart1_Voltages ();
+    // TF_Adc_Usart1_Voltages ();
 
 }
 
@@ -84,20 +86,62 @@ void TF_Led (void)
     while (1)
     {
         if (LED)
-        {
-            // for tests in other board
-            GPIOA->BSRR = 0x10000000;
             LED_OFF;
-        }
         else
-        {
-            // for tests in other board
-            GPIOA->BSRR = 0x00001000;            
             LED_ON;
-        }
-
         
         Wait_ms(200);
+    }
+}
+
+
+void TF_Led_Timers (void)
+{
+    int state = 0;
+
+    while (1)
+    {
+        if (state == 0)
+        {
+            if (!timer_standby)
+            {
+                ChangeLed_With_Timer (LED_TREATMENT_STANDBY, 4000);
+                timer_standby = 20000;
+                state++;
+            }
+        }
+
+        if (state == 1)
+        {
+            if (!timer_standby)
+            {
+                ChangeLed_With_Timer (LED_TREATMENT_STANDBY, 0);
+                timer_standby = 20000;
+                state++;
+            }
+        }
+
+        if (state == 2)
+        {
+            if (!timer_standby)
+            {
+                ChangeLed (LED_TREATMENT_SINE_RUNNING);
+                timer_standby = 20000;
+                state++;
+            }
+        }
+
+        if (state == 3)
+        {
+            if (!timer_standby)
+            {
+                ChangeLed (LED_TREATMENT_SQUARE_RUNNING);
+                timer_standby = 20000;
+                state = 0;
+            }
+        }
+
+        UpdateLed();
     }
 }
 

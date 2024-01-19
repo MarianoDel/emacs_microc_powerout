@@ -153,38 +153,22 @@
 
 
 
-//--- ESTADOS DEL LED -----------
-typedef enum
-{    
-    START_BLINKING = 0,
-    WAIT_TO_OFF,
-    WAIT_TO_ON,
-    WAIT_NEW_CYCLE
-} led_state_t;
-
-//Estados Externos de LED BLINKING
+// LED states (how many blinks)
 #define LED_NO_BLINKING    0     
 #define LED_TREATMENT_STANDBY    1
 #define LED_TREATMENT_SQUARE_RUNNING    2
-#define LED_TREATMENT_SINUS_RUNNING    3
+#define LED_TREATMENT_SINE_RUNNING    3
 
 
 
 //--- Exported Module Functions ----
-void ChangeLed (unsigned char);
+void ChangeLed (unsigned char how_many);
+void ChangeLed_With_Timer (unsigned char how_many, unsigned short led_timer_off);
 void UpdateLed (void);
 void HARD_Timeouts (void);
-void HARD_L1_ON (void);
-void HARD_L1_OFF (void);
 
-unsigned char Led1_Is_On (void);
-void Led1_On (void);
-void Led1_Off (void);
-
-void Pb14_To_Output (void);
-void Pb14_Off (void);
-void Pb14_On (void);
-void Pb14_To_Input (void);
-unsigned char Tamper_Pin (void);
+unsigned char Led_Is_On (void);
+void Led_On (void);
+void Led_Off (void);
 
 #endif

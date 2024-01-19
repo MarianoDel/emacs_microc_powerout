@@ -26,7 +26,7 @@ typedef enum {
 
 typedef enum {
     MODE_SQUARE,
-    MODE_SINUS
+    MODE_SINE
     
 } mode_e;
 

@@ -319,6 +319,12 @@ void Signal_Set_Sinusoidal_Cut (void)
 }
 
 
+void Signal_Reset_Sinusoidal_Cut (void)
+{
+    sinusoidal_cut = 0;
+}
+
+
 unsigned char Signal_Get_Sinusoidal_Cut (void)
 {
     return sinusoidal_cut;
