@@ -14,10 +14,11 @@
 
 #include "hard.h"
 #include "tim.h"
-// #include "dsp.h"
+#include "timer_signals.h"
+
 #include "adc.h"
-// #include "pwm.h"
-#include "channels_defs.h"
+#include "dac.h"
+
 
 #include "answers_defs.h"
 
@@ -100,11 +101,20 @@ const unsigned short sinusoidal_table [] = {12,25,37,50,62,75,87,100,112,125,
 
 
 // Module Private Functions ----------------------------------------------------
-// void Signals_Generate_Channel (unsigned char which_channel, unsigned short new_sp);
-// void Signals_Setup_Phase_Accumulator (unsigned char freq_int,
-//                                       unsigned char freq_dec,
-//                                       unsigned short * phase_accum);
+unsigned short Signals_Current_to_VoltagePts (unsigned short current_ua);
+void Signals_Calc_Square_Outputs (treatment_conf_t * pconf);
+void Signals_Set_Rising_Ouput (treatment_conf_t * pconf);
+void Signals_Set_Falling_Ouput (treatment_conf_t * pconf);
+void Signals_Get_High_Current (void);
+void Signals_Get_Low_Current (void);
 
+void Signals_Calc_Sinusoidal_Outputs (treatment_conf_t * pconf);
+void Signals_Set_Sinusoidal_High (treatment_conf_t * pconf, unsigned short value);
+void Signals_Set_Sinusoidal_Low (treatment_conf_t * pconf, unsigned short value);
+
+void Signal_Set_Sinusoidal_Cut (void);
+void Signal_Reset_Sinusoidal_Cut (void);
+unsigned char Signal_Get_Sinusoidal_Cut (void);
 
 // Module Functions ------------------------------------------------------------
 signals_square_states_e square_state = SQUARE_INIT;
@@ -130,34 +140,37 @@ resp_e Signals_Square (treatment_conf_t * pconf)
         if (resp == resp_ok)
         {
             resp = resp_continue;
+
             // set timers here!!!
-            Timer_Set_Registers (td.psc, td.arr_div_4);
+            Timer_Square_Signal_Reset();
+            Timer_Square_Set_Registers (td.psc, td.arr_div_4);    //and start timer
+
             square_state++;
         }
         break;
 
     case SQUARE_FIRST_EDGE:
-        if (Timer_Signal_Ended())
+        if (Timer_Square_Signal_Ended())
         {
-            Timer_Signal_Reset();
+            Timer_Square_Signal_Reset();
             Signals_Set_Rising_Ouput (pconf);
             square_state++;
         }
         break;
 
     case SQUARE_POSITIVE_PLATEAU:
-        if (Timer_Signal_Ended())
+        if (Timer_Square_Signal_Ended())
         {
-            Timer_Signal_Reset();
+            Timer_Square_Signal_Reset();
             Signals_Get_High_Current ();
             square_state++;
         }        
         break;
 
     case SQUARE_SECOND_EDGE:
-        if (Timer_Signal_Ended())
+        if (Timer_Square_Signal_Ended())
         {
-            Timer_Signal_Reset();
+            Timer_Square_Signal_Reset();
             Signals_Set_Falling_Ouput (pconf);
             square_state++;
         }
@@ -165,15 +178,15 @@ resp_e Signals_Square (treatment_conf_t * pconf)
         break;
 
     case SQUARE_NEGATIVE_PLATEAU:
-        if (Timer_Signal_Ended())
+        if (Timer_Square_Signal_Ended())
         {
-            Timer_Signal_Reset();
+            Timer_Square_Signal_Reset();
             Signals_Get_Low_Current ();
             square_state = SQUARE_FIRST_EDGE;
         }                
         break;
         
-    defautl:
+    default:
         square_state = SQUARE_INIT;
         break;
     }
@@ -206,8 +219,10 @@ resp_e Signals_Sinusoidal (treatment_conf_t * pconf)
         if (resp == resp_ok)
         {
             resp = resp_continue;
-            // set timers square_cut here!!!
-            Timer_Set_Registers (td.psc, td.arr);
+
+            // set timers here, square_cut & sinusoidal (always same freq)!!!
+            Timer_Square_Set_Registers (td.psc, td.arr);
+            Timer_Sine_Set_Registers (63, 13019);    // 0.3Hz * 256 points -> 13.02ms
 
             square_cut_state = SQUARE_NO_CUTTING;
             sine_state++;
@@ -248,7 +263,7 @@ resp_e Signals_Sinusoidal (treatment_conf_t * pconf)
         }
         break;
         
-    defautl:
+    default:
         sine_state = SINE_INIT;
         break;
     }
@@ -257,18 +272,18 @@ resp_e Signals_Sinusoidal (treatment_conf_t * pconf)
     switch (square_cut_state)
     {
     case SQUARE_NO_CUTTING:
-        if (Timer_Signal_Ended())
+        if (Timer_Square_Signal_Ended())
         {
-            Timer_Signal_Reset();
+            Timer_Square_Signal_Reset();
             Signal_Set_Sinusoidal_Cut();
             square_cut_state++;
         }
         break;
 
     case SQUARE_CUTTING:
-        if (Timer_Signal_Ended())
+        if (Timer_Square_Signal_Ended())
         {
-            Timer_Signal_Reset();
+            Timer_Square_Signal_Reset();
             Signal_Reset_Sinusoidal_Cut();
             square_cut_state = SQUARE_NO_CUTTING;
         }
@@ -276,6 +291,12 @@ resp_e Signals_Sinusoidal (treatment_conf_t * pconf)
     }
     
     return resp;
+}
+
+
+void Signals_Sinusoidal_Reset (void)
+{
+    sine_state = SINE_INIT;    
 }
 
 
@@ -318,6 +339,146 @@ resp_e Signals_Timers_Calculation (timers_data_st * td)
 }
 
 
+unsigned short Signals_Current_to_VoltagePts (unsigned short current_ua)
+{
+    int calc = 0;
+
+    // current on 3k3 resistor to voltage on 3.3V
+    // ex. 25uA * 3300 * 4095 / 3.3V = 102pts
+    // algo 25 * 4095 / 1000 = 102pts
+    calc = current_ua * 4095;
+    calc = calc / 1000;
+
+    return (unsigned short) calc;
+}
 
 
+void Signals_Calc_Square_Outputs (treatment_conf_t * pconf)
+{
+    int calc = 0;
+
+    // limits checks
+
+    calc = Signals_Current_to_VoltagePts (pconf->intensity);
+    
+    unsigned short bottom = calc >> 1;
+    unsigned short top = calc + bottom;
+    
+    if (top > 4095)
+        top = 4095;
+
+    pconf->itov_low = bottom;    
+    pconf->itov_high = top;    
+}
+
+
+void Signals_Set_Rising_Ouput (treatment_conf_t * pconf)
+{
+    DAC_Output1(pconf->itov_high);
+}
+
+
+void Signals_Set_Falling_Ouput (treatment_conf_t * pconf)
+{
+    DAC_Output1(pconf->itov_low);
+}
+
+
+void Signals_Get_High_Current (void)
+{
+}
+
+
+void Signals_Get_Low_Current (void)
+{
+}
+
+
+void Signals_Calc_Sinusoidal_Outputs (treatment_conf_t * pconf)
+{
+    int calc = 0;
+    int peak_curr = 0;
+
+    // limits checks
+
+    // peak current = iset(mean) * 1.41 * 2 / 0.9
+    // ex. algo iset * 3.13
+    calc = pconf->intensity * 313;
+    calc = calc / 100;
+    peak_curr = Signals_Current_to_VoltagePts (calc);
+
+    calc = peak_curr * 75;
+    calc = calc / 100;    //75% of peak
+    
+    if (calc > 4095)
+        calc = 4095;
+
+    pconf->itov_low = calc;
+
+    calc = peak_curr * 125;
+    calc = calc / 100;    //125% of peak
+
+    if (calc > 4095)
+        calc = 4095;
+
+    pconf->itov_high = calc;
+}
+
+
+void Signals_Set_Sinusoidal_High (treatment_conf_t * pconf, unsigned short value)
+{
+    int calc = 0;
+
+    calc = pconf->itov_high * value;
+    calc >>= 10;
+
+    if (calc > 4095)
+        calc = 4095;
+        
+    DAC_Output1 (calc);    
+}
+
+
+void Signals_Set_Sinusoidal_Low (treatment_conf_t * pconf, unsigned short value)
+{
+    int calc = 0;
+
+    calc = pconf->itov_low * value;
+    calc >>= 10;
+
+    if (calc > 4095)
+        calc = 4095;
+        
+    DAC_Output1 (calc);
+}
+
+
+unsigned char sinusoidal_cut = 0;
+void Signal_Set_Sinusoidal_Cut (void)
+{
+    sinusoidal_cut = 1;
+}
+
+
+void Signal_Reset_Sinusoidal_Cut (void)
+{
+    sinusoidal_cut = 0;
+}
+
+
+unsigned char Signal_Get_Sinusoidal_Cut (void)
+{
+    return sinusoidal_cut;
+}
+
+
+void Signals_Stop (void)
+{
+    Timer_Square_Signal_Stop();
+    Signals_Square_Reset();
+
+    Timer_Sine_Signal_Stop();
+    Signals_Sinusoidal_Reset();
+    DAC_Output1(0);
+}
 //--- end of file ---//

@@ -29,15 +29,18 @@ typedef struct {
 
 
 // Exported Module Functions ---------------------------------------------------
-void Signals_Square_Reset (void);
 resp_e Signals_Square (treatment_conf_t * pconf);
+void Signals_Square_Reset (void);
+
 resp_e Signals_Sinusoidal (treatment_conf_t * pconf);
+void Signals_Sinusoidal_Reset (void);
 
 resp_e Signals_Timers_Calculation (timers_data_st * td);
 
 void Signals_Sync_Enable (void);
 void Signals_Sync_Disable (void);
 
+void Signals_Stop (void);
 
 #endif    /* _SIGNALS_H_ */
 

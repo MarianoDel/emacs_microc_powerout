@@ -58,9 +58,19 @@ void TIM5_Update_CH2 (unsigned short a);
 
 void TIM6_Init(void);
 void TIM6_IRQHandler (void);
+void TIM6_Change (unsigned short new_psc, unsigned short new_arr);
+unsigned char TIM6_UIF_Get_Flag (void);
+void TIM6_UIF_Reset (void);
+void TIM6_UIF_Set (void);
+void TIM6_Stop (void);
 
 void TIM7_Init(void);
 void TIM7_IRQHandler (void);
+void TIM7_Change (unsigned short new_psc, unsigned short new_arr);
+unsigned char TIM7_UIF_Get_Flag (void);
+void TIM7_UIF_Reset (void);
+void TIM7_UIF_Set (void);
+void TIM7_Stop (void);
 
 // Timer 8 Functions
 void TIM8_Init (void);

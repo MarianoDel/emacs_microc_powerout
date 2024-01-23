@@ -18,32 +18,13 @@
 #include "usart.h"
 #include "dma.h"
 #include "tim.h"
-// #include "pwm.h"
-
 #include "dac.h"
-
-// #include "comms_from_rasp.h"
-
-#include "comms_channels.h"
-#include "antennas.h"
 
 #include "treatment.h"
 
 #include <stdio.h>
 #include <string.h>
 
-
-// #define HIGH_LEFT_PWM_CH1(X)    TIM8_Update_CH3(X)
-// #define LOW_RIGHT_PWM_CH1(X)    TIM8_Update_CH4(X)
-
-// #define HIGH_LEFT_PWM_CH2(X)    TIM8_Update_CH2(X)
-// #define LOW_RIGHT_PWM_CH2(X)    TIM8_Update_CH1(X)
-
-// #define HIGH_LEFT_PWM_CH3(X)    TIM4_Update_CH2(X)
-// #define LOW_RIGHT_PWM_CH3(X)    TIM4_Update_CH3(X)
-
-// #define HIGH_LEFT_PWM_CH4(X)    TIM5_Update_CH1(X)
-// #define LOW_RIGHT_PWM_CH4(X)    TIM5_Update_CH2(X)
 
 // Externals -------------------------------------------------------------------
 extern volatile unsigned short adc_ch [];

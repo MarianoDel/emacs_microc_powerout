@@ -171,4 +171,8 @@ unsigned char Led_Is_On (void);
 void Led_On (void);
 void Led_Off (void);
 
+void Hard_GetVoltages (char * buff);
+void Hard_GetHardSoft (char * buff);
+void Hard_GetVoltages_Complete (void);
+
 #endif

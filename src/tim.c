@@ -55,14 +55,16 @@ extern volatile unsigned short wait_ms_var;
 
 
 // Globals ---------------------------------------------------------------------
-volatile unsigned char timer1_seq_ready = 0;
-volatile unsigned short timer1_seq_cnt = 0;
+// volatile unsigned char timer1_seq_ready = 0;
+// volatile unsigned short timer1_seq_cnt = 0;
 
-volatile unsigned short sync_last_capt = 0;
-volatile unsigned short sync_capt = 0;
-volatile unsigned short sync_cnt = 0;
-volatile unsigned char sync_int = 0;
-volatile unsigned char sync_verify = 0;
+// volatile unsigned short sync_last_capt = 0;
+// volatile unsigned short sync_capt = 0;
+// volatile unsigned short sync_cnt = 0;
+// volatile unsigned char sync_int = 0;
+// volatile unsigned char sync_verify = 0;
+volatile unsigned char timer_6_uif_flag = 0;
+volatile unsigned char timer_7_uif_flag = 0;
 
 
 // Module Functions ------------------------------------------------------------
@@ -123,10 +125,6 @@ void TIM1_UP_IRQHandler (void)
     if (TIM1->SR & TIM_SR_UIF)
         TIM1->SR &= ~TIM_SR_UIF;
 
-    //Code Handler
-    timer1_seq_ready = 1;
-    if (timer1_seq_cnt < 65000)
-        timer1_seq_cnt++;
     
 }
 
@@ -137,62 +135,50 @@ void TIM1_CC_IRQHandler (void)
     if (TIM1->SR & TIM_SR_CC4IF)
         TIM1->SR &= ~TIM_SR_CC4IF;
 
-    //Code Handler
-    sync_last_capt = sync_capt;
-    sync_capt = TIM1->CCR4;
-    sync_cnt = timer1_seq_cnt;
-    timer1_seq_cnt = 0;
-    sync_int = 1;
-    sync_verify = 1;
-
-    // if (LED1)
-    //     LED1_OFF;
-    // else
-    //     LED1_ON;
     
 }
 
 
-unsigned char TIM1_SyncGet (void)
-{
-    return sync_int;
-}
+// unsigned char TIM1_SyncGet (void)
+// {
+//     return sync_int;
+// }
 
 
-void TIM1_SyncReset (void)
-{
-    sync_int = 0;
-}
+// void TIM1_SyncReset (void)
+// {
+//     sync_int = 0;
+// }
 
 
-unsigned char TIM1_SyncVerify (unsigned char * freq_int, unsigned char * freq_dec)
-{
-    if ((!sync_verify) ||
-        (timer1_seq_cnt == 65000))
-        return 0;
+// unsigned char TIM1_SyncVerify (unsigned char * freq_int, unsigned char * freq_dec)
+// {
+//     if ((!sync_verify) ||
+//         (timer1_seq_cnt == 65000))
+//         return 0;
 
-    unsigned int calc_int = 0;
-    unsigned int calc_dec = 0;
-    unsigned int calc_div = 0;
+//     unsigned int calc_int = 0;
+//     unsigned int calc_dec = 0;
+//     unsigned int calc_div = 0;
 
-    calc_div = 1000 * sync_cnt + sync_capt - sync_last_capt;
+//     calc_div = 1000 * sync_cnt + sync_capt - sync_last_capt;
 
-    if (calc_div == 0)
-        return 0;
+//     if (calc_div == 0)
+//         return 0;
 
-    calc_dec = 7200 * 1000 * 100;
-    calc_dec = calc_dec / calc_div;
+//     calc_dec = 7200 * 1000 * 100;
+//     calc_dec = calc_dec / calc_div;
     
-    calc_int = 7200 * 1000;
-    calc_int = calc_int / calc_div;
+//     calc_int = 7200 * 1000;
+//     calc_int = calc_int / calc_div;
 
-    calc_dec = calc_dec - calc_int * 100;
+//     calc_dec = calc_dec - calc_int * 100;
 
-    *freq_int = (unsigned char) calc_int;
-    *freq_dec = (unsigned char) calc_dec;
+//     *freq_int = (unsigned char) calc_int;
+//     *freq_dec = (unsigned char) calc_dec;
 
-    return 1;
-}
+//     return 1;
+// }
 
 // void TIM_1_Init (void)    //for one pulse mode
 // {
@@ -385,43 +371,54 @@ void TIM6_Init(void)
 
     // NVIC enable for timer 6
     NVIC_EnableIRQ(TIM6_IRQn);
-    NVIC_SetPriority(TIM6_IRQn, 10);
+    NVIC_SetPriority(TIM6_IRQn, 9);
 }
 
 
-void TIM6_Change (unsigned short new_arr, unsigned short new_psc)
+void TIM6_Change (unsigned short new_psc, unsigned short new_arr)
 {
-    TIM6->CR1 &= TIM_CR1_CEN;
-    TIM6->ARR = new_arr;
+    TIM6->CR1 &= ~(TIM_CR1_CEN);
+    TIM6->CNT = 0;
     TIM6->PSC = new_psc;
+    TIM6->ARR = new_arr;
     TIM6->CR1 |= TIM_CR1_CEN;
 }
 
 
-void TIM7_IRQHandler (void)	//1mS
+void TIM6_IRQHandler (void)
 {
-    if (TIM7->SR & 0x01)
-        TIM7->SR = 0x00;    //bajar flag
+    if (TIM6->SR & TIM_SR_UIF)
+        TIM6->SR = ~(TIM_SR_UIF);
 
-    // if (LED2)
-    //     LED2_OFF;
-    // else
-    //     LED2_ON;
-    
+    TIM6_UIF_Set();
 }
 
 
-// void TIM6_IRQHandler (void)	//100mS
-// {
-// 	UART_Tim6 ();
+unsigned char TIM6_UIF_Get_Flag (void)
+{
+    return timer_6_uif_flag;
+}
 
-// 	//bajar flag
-// 	if (TIM6->SR & 0x01)	//bajo el flag
-// 		TIM6->SR = 0x00;
-// }
+    
+void TIM6_UIF_Reset (void)
+{
+    timer_6_uif_flag = 0;
+}
 
 
-//inicializo el TIM7 para interrupciones
+void TIM6_UIF_Set (void)
+{
+    timer_6_uif_flag = 1;
+}
+
+
+void TIM6_Stop (void)
+{
+    TIM6->CR1 &= ~(TIM_CR1_CEN);
+}
+///////////////////////
+// Timer 7 Functions //
+///////////////////////
 void TIM7_Init(void)
 {
 //    Counter Register (TIMx_CNT)
@@ -452,41 +449,52 @@ void TIM7_Init(void)
     NVIC_SetPriority(TIM7_IRQn, 10);
 }
 
-// void TIM6_Init(void)
-// {
-// 	NVIC_InitTypeDef NVIC_InitStructure;
-// //    		Counter Register (TIMx_CNT)
-// //    		Prescaler Register (TIMx_PSC)
-// //    		Auto-Reload Register (TIMx_ARR)
-// //			The counter clock frequency CK_CNT is equal to fCK_PSC / (PSC[15:0] + 1)
 
-// //			Quiero una interrupcion por ms CK_INT es 72MHz
+void TIM7_IRQHandler (void)
+{
+    if (TIM7->SR & TIM_SR_UIF)
+        TIM7->SR = ~(TIM_SR_UIF);
 
-// 	//---- Clk ----//
-// 	if (!(RCC->APB1ENR & 0x00000010))
-// 		RCC->APB1ENR |= 0x00000010;
-
-// 	//--- Config ----//
-// 	TIM6->ARR = 10000; //100mS.
-// 	TIM6->CNT = 0;
-// 	TIM6->PSC = 719;
-// 	TIM6->EGR = TIM_EGR_UG;
-
-// 	// Enable timer ver UDIS
-// 	TIM6->DIER |= TIM_DIER_UIE;
-// 	TIM6->CR1 |= TIM_CR1_CEN;
-
-// 	//Habilito NVIC
-// 	//Interrupcion timer6.
-// 	NVIC_InitStructure.NVIC_IRQChannel = TIM6_IRQn;
-// 	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 11;
-// 	NVIC_InitStructure.NVIC_IRQChannelSubPriority = 11;
-// 	NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
-// 	NVIC_Init(&NVIC_InitStructure);
-// }
+    TIM7_UIF_Set();
+}
 
 
-//-- Timer 8 Functions --
+void TIM7_Change (unsigned short new_psc, unsigned short new_arr)
+{
+    TIM7->CR1 &= ~(TIM_CR1_CEN);
+    TIM7->CNT = 0;
+    TIM7->PSC = new_psc;
+    TIM7->ARR = new_arr;
+    TIM7->CR1 |= TIM_CR1_CEN;
+}
+
+
+unsigned char TIM7_UIF_Get_Flag (void)
+{
+    return timer_7_uif_flag;
+}
+
+    
+void TIM7_UIF_Reset (void)
+{
+    timer_7_uif_flag = 0;
+}
+
+
+void TIM7_UIF_Set (void)
+{
+    timer_7_uif_flag = 1;
+}
+
+
+void TIM7_Stop (void)
+{
+    TIM7->CR1 &= ~(TIM_CR1_CEN);
+}
+
+///////////////////////
+// Timer 8 Functions //
+///////////////////////
 void TIM8_Init (void)
 {
 //    Counter Register (TIMx_CNT)

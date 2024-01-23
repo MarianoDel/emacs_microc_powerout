@@ -13,12 +13,10 @@
 #include "treatment.h"
 
 
-
 // helper modules
 #include "tests_ok.h"
 #include "tests_mock_usart.h"
-#include "tests_vector_utils.h"
-#include "tests_know_antennas.h"
+
 
 #include <stdio.h>
 // #include <math.h>

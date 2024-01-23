@@ -16,11 +16,11 @@
 #include "adc.h"
 #include "dma.h"
 #include "dac.h"
-// #include "tim.h"
+#include "tim.h"
 #include "gpio.h"
 #include "usart.h"
 
-// #include "comms.h"
+#include "comms.h"
 #include "test_functions.h"
 #include "treatment.h"
 // #include "comms_channels.h"
@@ -35,24 +35,11 @@
 
 
 // Externals -------------------------------------------------------------------
-// unsigned short comms_messages_1 = 0;
-// unsigned short comms_messages_2 = 0;
-// unsigned short comms_messages_3 = 0;
-// unsigned short comms_messages_rpi = 0;
-
-
-// char buffSendErr[64];
-
-//--- Externals for keepalives on usarts
-// #define TIME_RUN_DEF 250
-// volatile unsigned short timeRun = TIME_RUN_DEF;
-
-//--- Externals de los timers
+//--- Externals from timers
 volatile unsigned short timer_standby = 0;
 volatile unsigned short wait_ms_var = 0;
-volatile unsigned short comms_timeout = 0;
 
-//--- Externals de los timers
+//--- Externals from adc
 volatile unsigned short adc_ch [ADC_CHANNEL_QUANTITY];
 
 
@@ -102,14 +89,9 @@ int main (void)
     //-- Comms with probes
     // Usart3Config ();
 
-//     //-- PWM Timers    
-//     TIM8_Init();    // init timer 8 for ch1 & ch2 pwm output
-//     TIM4_Init();    // init timer 4 for channel 3 pwm output
-//     TIM5_Init();    // init timer 5 for channel 4 pwm output
-
-//     //-- TIM1 for signals module sequence ready
-//     TIM1_Init();
-
+    //-- TIM1 for signals module sequence ready
+    TIM6_Init();
+    TIM7_Init();
     
 
     //-- Main Loop --------------------------
@@ -119,16 +101,14 @@ int main (void)
         // AntennaUpdateStates ();
 
         // update the channels comms
-        // Comms_Channel1 ();
-        // Comms_Channel2 ();
-        // Comms_Channel3 ();
-        // Comms_Channel4 ();
+        Comms_Update ();
 
         // update treatment state
         Treatment_Manager();
 
         // the update of led and buzzer on Treatment_Manager()
-        
+        UpdateLed();
+
     }
 }
 
@@ -181,15 +161,15 @@ void TimingDelay_Decrement(void)
     if (wait_ms_var)
         wait_ms_var--;
 
-    // AntennaTimeouts ();
+    if (timer_standby)
+        timer_standby--;
+
+// AntennaTimeouts ();
 
     // Treatment_Timeouts ();
     
     HARD_Timeouts();
     
-    if (timer_standby)
-        timer_standby--;
-
 }
 
 

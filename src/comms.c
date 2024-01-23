@@ -27,26 +27,39 @@
 #include <stdlib.h>
 
 
-
+// Module Private Types Constants and Macros -----------------------------------
+char s_ans_ok [] = {"ok\n"};
+char s_ans_nok [] = {"nok\n"};
 #define SIZEOF_LOCAL_BUFF    128
+#define COMMS_TT_RELOAD    3000
+
+
 // Externals -------------------------------------------------------------------
 
 
 // Globals ---------------------------------------------------------------------
 char local_buff [SIZEOF_LOCAL_BUFF];
+volatile unsigned short comms_timeout = 0;
     
 
 // Module Private Functions ----------------------------------------------------
 static void Comms_Messages (char * msg_str);
-// static void SendAllConf (void);
-// static void SendStatus (void);
-// resp_e Comms_Signal_Old_Mode (char * m);
 
 
 // Module Functions ------------------------------------------------------------
+void Comms_Timeouts (void)
+{
+    if (comms_timeout)
+        comms_timeout--;
+}
+
+
 unsigned char Comms_Rpi_Answering (void)
 {
-    return 1;
+    if (comms_timeout)
+        return 1;
+    
+    return 0;
 }
 
 
@@ -58,6 +71,7 @@ void Comms_Update (void)
         Led_On();
         Usart1ReadBuffer(local_buff, SIZEOF_LOCAL_BUFF);
         Comms_Messages(local_buff);
+        comms_timeout = COMMS_TT_RELOAD;
         Led_Off();
     }
 }
@@ -65,8 +79,8 @@ void Comms_Update (void)
 
 static void Comms_Messages (char * msg_str)
 {
-    resp_e resp = resp_ok;
-
+    resp_e resp;
+    
     // check if its own
     if ((strncmp (msg_str, "ch1", sizeof("ch1") - 1) != 0) &&
         (strncmp (msg_str, "chf", sizeof("chf") - 1) != 0))
@@ -77,74 +91,97 @@ static void Comms_Messages (char * msg_str)
     // -- config messages for signals --
     if (!strncmp(msg, "frequency", sizeof("frequency") - 1))
     {
-        Treatment_SetFrequency_Str (msg + sizeof("frequency"));
-        // Usart1Send (s_ans_ok);
+        resp = Treatment_SetFrequency_Str (msg + sizeof("frequency"));
+        if (resp == resp_ok)
+            Usart1Send (s_ans_ok);
+        else
+            Usart1Send (s_ans_nok);
     }
 
     else if (!strncmp(msg, "intensity", sizeof("intensity") - 1))
     {
-        Treatment_SetIntensity_Str (msg + sizeof("intensity"));
-        // Usart1Send (s_ans_ok);
+        resp = Treatment_SetIntensity_Str (msg + sizeof("intensity"));
+        if (resp == resp_ok)
+            Usart1Send (s_ans_ok);
+        else
+            Usart1Send (s_ans_nok);
     }
 
     else if (!strncmp(msg, "polarity", sizeof("polarity") - 1))
     {
-        Treatment_SetPolarity_Str (msg + sizeof("polarity"));
-        // Usart1Send (s_ans_ok);
+        resp = Treatment_SetPolarity_Str (msg + sizeof("polarity"));
+        if (resp == resp_ok)
+            Usart1Send (s_ans_ok);
+        else
+            Usart1Send (s_ans_nok);
     }
 
     // config messages for channel setup
     else if (!strncmp(msg, "mode", sizeof("mode") - 1))
     {
-        Treatment_SetMode_Str (msg + sizeof("mode"));
-        // Usart1Send (s_ans_ok);
+        resp = Treatment_SetMode_Str (msg + sizeof("mode"));
+        if (resp == resp_ok)
+            Usart1Send (s_ans_ok);
+        else
+            Usart1Send (s_ans_nok);
     }
 
     else if (!strncmp(msg, "threshold", sizeof("threshold") - 1))
     {
-        Treatment_SetThreshold_Str (msg + sizeof("threshold"));
-        // Usart1Send (s_ans_ok);
+        resp = Treatment_SetThreshold_Str (msg + sizeof("threshold"));
+        if (resp == resp_ok)
+            Usart1Send (s_ans_ok);
+        else
+            Usart1Send (s_ans_nok);
     }
 
     // -- operation messages --
     else if (!strncmp(msg, "start", sizeof("start") - 1))
     {
         Treatment_Start ();
-        // Usart1Send (s_ans_ok);
+        Usart1Send (s_ans_ok);
     }
 
     else if (!strncmp(msg, "stop", sizeof("stop") - 1))
     {
         Treatment_Stop ();
-        // Usart1Send (s_ans_ok);
+        Usart1Send (s_ans_ok);
     }
 
     // -- measures messages --
     if (!strncmp(msg, "set_gain", sizeof("set_gain") - 1))
     {
-        Treatment_SetGain_Str (msg + sizeof("set_gain"));
-        // Usart1Send (s_ans_ok);
+        resp = Treatment_SetGain_Str (msg + sizeof("set_gain"));
+        if (resp == resp_ok)
+            Usart1Send (s_ans_ok);
+        else
+            Usart1Send (s_ans_nok);
     }
 
     if (!strncmp(msg, "get_gain", sizeof("get_gain") - 1))
     {
-        Treatment_GetGain ();
-        // Usart1Send (s_ans_ok);
+        char buff [50];
+        unsigned char gain;
+        gain = Treatment_GetGain ();
+        sprintf(buff, "gain: %d\n", gain);
+        Usart1Send(buff);
     }
 
     // -- board messages --
     if (!strncmp(msg, "voltages", sizeof("voltages") - 1))
     {
-        Hard_GetVoltages ();
-        // Treatment_SetPolarity_Str (msg + sizeof("voltages") + 1);
-        // Usart1Send (s_ans_ok);
+        // char buff [50];
+        // Hard_GetVoltages (buff);
+        // Usart1Send(buff);
+
+        Hard_GetVoltages_Complete ();
     }
 
     if (!strncmp(msg, "hard_soft", sizeof("hard_soft") - 1))
     {
-        Hard_GetHardSoft();
-        // Treatment_SetPolarity_Str (msg + sizeof("hard_soft") + 1);
-        // Usart1Send (s_ans_ok);
+        char buff [50];
+        Hard_GetHardSoft (buff);
+        Usart1Send(buff);
     }
     
     

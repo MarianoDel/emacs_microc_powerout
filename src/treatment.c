@@ -88,6 +88,7 @@ void Treatment_Manager (void)
             else if (treatment_conf.mode == MODE_SINE)
             {
                 Usart1Send("starting sinusoidal\r\n");
+                Signals_Sinusoidal_Reset ();
                 ChangeLed(LED_TREATMENT_SINE_RUNNING);                
                 treat_state = TREATMENT_SINE_RUNNING;
             }            

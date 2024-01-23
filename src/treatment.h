@@ -37,8 +37,10 @@ typedef struct {
     polarity_e polarity;
     mode_e mode;
     unsigned short intensity;
+    unsigned short itov_high;
+    unsigned short itov_low;
     unsigned char threshold;
-    unsigned char gain;
+    unsigned char gain;    
     
 } treatment_conf_t;
 

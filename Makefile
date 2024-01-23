@@ -76,7 +76,8 @@ SRC += ./src/dac.c
 SRC += ./src/treatment.c
 SRC += ./src/signals.c
 SRC += ./src/comms.c
-# SRC += ./src/utils.c
+SRC += ./src/utils.c
+SRC += ./src/timer_signals.c
 SRC += ./src/test_functions.c
 
 # SRC += ./src/comms_channels.c
