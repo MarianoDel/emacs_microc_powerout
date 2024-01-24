@@ -111,11 +111,17 @@ void Signals_Get_Low_Current (void);
 void Signals_Calc_Sinusoidal_Outputs (treatment_conf_t * pconf);
 void Signals_Set_Sinusoidal_High (treatment_conf_t * pconf, unsigned short value);
 void Signals_Set_Sinusoidal_Low (treatment_conf_t * pconf, unsigned short value);
+unsigned short Signals_Calc_Sinusoidal_High (treatment_conf_t * pconf, unsigned short value);
+unsigned short Signals_Calc_Sinusoidal_Low (treatment_conf_t * pconf, unsigned short value);
 
 void Signal_Set_Sinusoidal_Cut (void);
 void Signal_Reset_Sinusoidal_Cut (void);
 unsigned char Signal_Get_Sinusoidal_Cut (void);
+void Signal_Set_Sinusoidal_Cut_Last (unsigned short last_value);
 
+// void Signals_Set_Frequency_Intensity_Change_Flag (void);
+void Signals_Reset_Frequency_Intensity_Change_Flag (void);
+unsigned char Signals_Get_Frequency_Intensity_Change_Flag (void);
 // Module Functions ------------------------------------------------------------
 signals_square_states_e square_state = SQUARE_INIT;
 void Signals_Square_Reset (void)
@@ -140,10 +146,16 @@ resp_e Signals_Square (treatment_conf_t * pconf)
         if (resp == resp_ok)
         {
             resp = resp_continue;
+            
+            // set values here
+            Signals_Calc_Square_Outputs (pconf);
 
-            // set timers here!!!
+            // set timers here, check arr != 0
             Timer_Square_Signal_Reset();
             Timer_Square_Set_Registers (td.psc, td.arr_div_4);    //and start timer
+
+            // all updates done!
+            Signals_Reset_Frequency_Intensity_Change_Flag ();
 
             square_state++;
         }
@@ -182,7 +194,11 @@ resp_e Signals_Square (treatment_conf_t * pconf)
         {
             Timer_Square_Signal_Reset();
             Signals_Get_Low_Current ();
-            square_state = SQUARE_FIRST_EDGE;
+
+            if (Signals_Get_Frequency_Intensity_Change_Flag ())
+                square_state = SQUARE_INIT;
+            else
+                square_state = SQUARE_FIRST_EDGE;
         }                
         break;
         
@@ -220,10 +236,16 @@ resp_e Signals_Sinusoidal (treatment_conf_t * pconf)
         {
             resp = resp_continue;
 
+            // set values here
+            Signals_Calc_Sinusoidal_Outputs (pconf);
+
             // set timers here, square_cut & sinusoidal (always same freq)!!!
             Timer_Square_Set_Registers (td.psc, td.arr);
             Timer_Sine_Set_Registers (63, 13019);    // 0.3Hz * 256 points -> 13.02ms
 
+            // all updates done!
+            Signals_Reset_Frequency_Intensity_Change_Flag ();
+            
             square_cut_state = SQUARE_NO_CUTTING;
             sine_state++;
         }
@@ -235,6 +257,12 @@ resp_e Signals_Sinusoidal (treatment_conf_t * pconf)
             Timer_Sine_Signal_Reset();
             if (!Signal_Get_Sinusoidal_Cut())
                 Signals_Set_Sinusoidal_High (pconf, *psine);
+            else
+            {
+                unsigned short dac_saved = 0;
+                dac_saved = Signals_Calc_Sinusoidal_High (pconf, *psine);
+                Signal_Set_Sinusoidal_Cut_Last(dac_saved);
+            }
 
             if (psine < &sinusoidal_table[TABLE_SIZE - 1])
                 psine++;
@@ -252,13 +280,23 @@ resp_e Signals_Sinusoidal (treatment_conf_t * pconf)
             Timer_Sine_Signal_Reset();
             if (!Signal_Get_Sinusoidal_Cut())
                 Signals_Set_Sinusoidal_Low (pconf, *psine);
+            else
+            {
+                unsigned short dac_saved = 0;
+                dac_saved = Signals_Calc_Sinusoidal_Low (pconf, *psine);
+                Signal_Set_Sinusoidal_Cut_Last(dac_saved);
+            }
 
             if (psine < &sinusoidal_table[TABLE_SIZE - 1])
                 psine++;
             else
             {
                 psine = sinusoidal_table;
-                sine_state = SINE_HIGH_HALF;
+                if (Signals_Get_Frequency_Intensity_Change_Flag ())
+                    sine_state = SINE_INIT;
+                else
+                    sine_state = SINE_HIGH_HALF;
+                
             }
         }
         break;
@@ -427,6 +465,15 @@ void Signals_Calc_Sinusoidal_Outputs (treatment_conf_t * pconf)
 
 void Signals_Set_Sinusoidal_High (treatment_conf_t * pconf, unsigned short value)
 {
+    unsigned short dac_value = 0;
+
+    dac_value = Signals_Calc_Sinusoidal_High (pconf, value);
+    DAC_Output1 (dac_value);
+}
+
+
+unsigned short Signals_Calc_Sinusoidal_High (treatment_conf_t * pconf, unsigned short value)
+{
     int calc = 0;
 
     calc = pconf->itov_high * value;
@@ -435,11 +482,20 @@ void Signals_Set_Sinusoidal_High (treatment_conf_t * pconf, unsigned short value
     if (calc > 4095)
         calc = 4095;
         
-    DAC_Output1 (calc);    
+    return (unsigned short) calc;
 }
 
 
 void Signals_Set_Sinusoidal_Low (treatment_conf_t * pconf, unsigned short value)
+{
+    unsigned short dac_value = 0;
+
+    dac_value = Signals_Calc_Sinusoidal_Low (pconf, value);
+    DAC_Output1 (dac_value);
+}
+
+
+unsigned short Signals_Calc_Sinusoidal_Low (treatment_conf_t * pconf, unsigned short value)
 {
     int calc = 0;
 
@@ -449,26 +505,35 @@ void Signals_Set_Sinusoidal_Low (treatment_conf_t * pconf, unsigned short value)
     if (calc > 4095)
         calc = 4095;
         
-    DAC_Output1 (calc);
+    return (unsigned short) calc;
 }
 
 
 unsigned char sinusoidal_cut = 0;
+unsigned short sinusoidal_cut_last_value = 0;
 void Signal_Set_Sinusoidal_Cut (void)
 {
     sinusoidal_cut = 1;
+    DAC_Output1 (0);
 }
 
 
 void Signal_Reset_Sinusoidal_Cut (void)
 {
     sinusoidal_cut = 0;
+    DAC_Output1 (sinusoidal_cut_last_value);
 }
 
 
 unsigned char Signal_Get_Sinusoidal_Cut (void)
 {
     return sinusoidal_cut;
+}
+
+
+void Signal_Set_Sinusoidal_Cut_Last (unsigned short last_value)
+{
+    sinusoidal_cut_last_value = last_value;
 }
 
 
@@ -481,4 +546,24 @@ void Signals_Stop (void)
     Signals_Sinusoidal_Reset();
     DAC_Output1(0);
 }
+
+
+unsigned char signal_freq_intensity_flag = 0;
+void Signals_Set_Frequency_Intensity_Change_Flag (void)
+{
+    signal_freq_intensity_flag = 1;
+}
+
+
+void Signals_Reset_Frequency_Intensity_Change_Flag (void)
+{
+    signal_freq_intensity_flag = 0;
+}
+
+
+unsigned char Signals_Get_Frequency_Intensity_Change_Flag (void)
+{
+    return signal_freq_intensity_flag;
+}
+
 //--- end of file ---//

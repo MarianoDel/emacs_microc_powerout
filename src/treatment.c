@@ -94,11 +94,11 @@ void Treatment_Manager (void)
             }            
         }
 
-        if (!Comms_Rpi_Answering())
-        {
-            ChangeLed_With_Timer (LED_TREATMENT_STANDBY, 4000);
-            treat_state--;
-        }
+        // if (!Comms_Rpi_Answering())
+        // {
+        //     ChangeLed_With_Timer (LED_TREATMENT_STANDBY, 4000);
+        //     treat_state--;
+        // }
         break;
 
     case TREATMENT_SQUARE_RUNNING:
@@ -188,6 +188,9 @@ resp_e Treatment_SetFrequency (unsigned short fint, unsigned short fdec)
     {
         treatment_conf.freq_int = fint;
         treatment_conf.freq_dec = fdec;
+
+        Signals_Set_Frequency_Intensity_Change_Flag ();
+        
         resp = resp_ok;
     }
 
@@ -220,6 +223,9 @@ resp_e Treatment_SetIntensity (unsigned short intensity)
     if (intensity <= 999)
     {
         treatment_conf.intensity = intensity;
+
+        Signals_Set_Frequency_Intensity_Change_Flag ();
+        
         resp = resp_ok;
     }
 

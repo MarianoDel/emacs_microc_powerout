@@ -82,6 +82,7 @@ int main (void)
 
     //-- DAC init for signal generation
     DAC_Config ();
+    DAC_Output1(1400);
     
     //-- Comms with rasp
     Usart1Config ();

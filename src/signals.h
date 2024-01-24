@@ -42,6 +42,8 @@ void Signals_Sync_Disable (void);
 
 void Signals_Stop (void);
 
+void Signals_Set_Frequency_Intensity_Change_Flag (void);
+
 #endif    /* _SIGNALS_H_ */
 
 //--- end of file ---//

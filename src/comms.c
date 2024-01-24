@@ -81,12 +81,13 @@ static void Comms_Messages (char * msg_str)
 {
     resp_e resp;
     
-    // check if its own
-    if ((strncmp (msg_str, "ch1", sizeof("ch1") - 1) != 0) &&
-        (strncmp (msg_str, "chf", sizeof("chf") - 1) != 0))
-        return;
+    // // check if its own
+    // if ((strncmp (msg_str, "ch1", sizeof("ch1") - 1) != 0) &&
+    //     (strncmp (msg_str, "chf", sizeof("chf") - 1) != 0))
+    //     return;
 
-    char * msg = (msg_str + 4);
+    // char * msg = (msg_str + 4);
+    char * msg = msg_str;
     
     // -- config messages for signals --
     if (!strncmp(msg, "frequency", sizeof("frequency") - 1))
