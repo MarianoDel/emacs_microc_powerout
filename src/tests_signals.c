@@ -54,13 +54,14 @@ void Test_Signals_Sinusoidal (void);
 
 // Tests Module Auxiliary or General Functions ---------------------------------
 // Mocked Functions Declaration ------------------------------------------------
-unsigned char Timer_Signal_Ended (void);
-void Timer_Signal_Reset (void);
-void Timer_Signal_Set (void);
-void Signals_Set_Rising_Ouput (treatment_conf_t * td);
-void Signals_Set_Falling_Ouput (treatment_conf_t * td);
-void Signals_Get_High_Current (void);
-void Signals_Get_Low_Current (void);
+unsigned char Timer_Square_Signal_Ended (void);
+void Timer_Square_Signal_Reset (void);
+void Timer_Square_Signal_Set (void);
+
+// void Signals_Set_Rising_Ouput (treatment_conf_t * td);
+// void Signals_Set_Falling_Ouput (treatment_conf_t * td);
+// void Signals_Get_High_Current (void);
+// void Signals_Get_Low_Current (void);
 
 unsigned char Timer_Sine_Signal_Ended (void);
 void Timer_Sine_Signal_Reset (void);
@@ -71,7 +72,7 @@ void Timer_Sine_Signal_Set (void);
 // Module Functions ------------------------------------------------------------
 int main (int argc, char *argv[])
 {
-    // Test_Signals_Timers_Calc_Single_Freq ();
+    Test_Signals_Timers_Calc_Single_Freq ();
 
     // Test_Signals_Timers_Calc_All_Allowed_Freqs ();
 
@@ -79,7 +80,7 @@ int main (int argc, char *argv[])
 
     // Test_Signals_Square ();
 
-    Test_Signals_Sinusoidal ();    
+    // Test_Signals_Sinusoidal ();    
 
     return 0;
 }
@@ -93,8 +94,8 @@ void Test_Signals_Timers_Calc_Single_Freq (void)
     timers_data_st td;
 
     // set single frequency to test
-    td.freq_int = 320;
-    td.freq_dec = 0;
+    td.freq_int = 100;
+    td.freq_dec = 80;
 
     resp = Signals_Timers_Calculation (&td);
 
@@ -198,7 +199,7 @@ void Test_Signals_Square (void)
     signal_config.freq_int = 10;
     signal_config.freq_dec = 9;
 
-    Timer_Signal_Set();
+    Timer_Square_Signal_Set();
     for (int i = 0; i < (loops * 4) + 1; i++)
     {
         resp = Signals_Square (&signal_config);
@@ -245,21 +246,27 @@ void Test_Signals_Sinusoidal (void)
 
 // Mocked Module Functions -----------------------------------------------------
 unsigned char timer_ended = 0;
-unsigned char Timer_Signal_Ended (void)
+unsigned char Timer_Square_Signal_Ended (void)
 {
     return timer_ended;
 }
 
 
-void Timer_Signal_Reset (void)
+void Timer_Square_Signal_Reset (void)
 {
     timer_ended = 0;
 }
 
 
-void Timer_Signal_Set (void)
+void Timer_Square_Signal_Set (void)
 {
     timer_ended = 1;
+}
+
+
+void Timer_Square_Signal_Stop (void)
+{
+    timer_ended = 0;
 }
 
 
@@ -282,94 +289,105 @@ void Timer_Sine_Signal_Set (void)
 }
 
 
-void Signals_Set_Rising_Ouput (treatment_conf_t * td)
+void Timer_Sine_Signal_Stop (void)
 {
-    printf("/");
-    Timer_Signal_Set();
+    timer_sine_ended = 0;
 }
 
 
-void Signals_Set_Falling_Ouput (treatment_conf_t * td)
+void DAC_Output1 (unsigned short new_val)
 {
-    printf("\\");
-    Timer_Signal_Set();    
+    printf("new dac value: %d\n", new_val);
 }
 
-
-void Signals_Get_High_Current (void)
-{
-    printf("-");
-    Timer_Signal_Set();    
-}
-
-
-void Signals_Get_Low_Current (void)
-{
-    printf("_");
-    Timer_Signal_Set();    
-}
+// void Signals_Set_Rising_Ouput (treatment_conf_t * td)
+// {
+//     printf("/");
+//     Timer_Signal_Set();
+// }
 
 
-unsigned char sinusoidal_cut = 0;
-void Signal_Set_Sinusoidal_Cut (void)
-{
-    sinusoidal_cut = 1;
-}
+// void Signals_Set_Falling_Ouput (treatment_conf_t * td)
+// {
+//     printf("\\");
+//     Timer_Signal_Set();    
+// }
 
 
-void Signal_Reset_Sinusoidal_Cut (void)
-{
-    sinusoidal_cut = 0;
-}
+// void Signals_Get_High_Current (void)
+// {
+//     printf("-");
+//     Timer_Signal_Set();    
+// }
 
 
-unsigned char Signal_Get_Sinusoidal_Cut (void)
-{
-    return sinusoidal_cut;
-}
+// void Signals_Get_Low_Current (void)
+// {
+//     printf("_");
+//     Timer_Signal_Set();    
+// }
 
 
-int report_high = 0;
-int high_cnt = 0;
-int report_low = 0;
-int low_cnt = 0;
-void Signals_Set_Sinusoidal_High (treatment_conf_t * td, unsigned short value)
-{
-    Timer_Sine_Signal_Set ();
+// unsigned char sinusoidal_cut = 0;
+// void Signal_Set_Sinusoidal_Cut (void)
+// {
+//     sinusoidal_cut = 1;
+// }
 
-    if (!report_low)
-    {
-        printf("low_cnt: %d high value: %d\n", low_cnt, value);
-        low_cnt = 0;
-        report_low = 1;
-        report_high = 0;
-    }
-    // else
-    //     printf(" high_cnt: %d high value: %d\n", high_cnt, value);
+
+// void Signal_Reset_Sinusoidal_Cut (void)
+// {
+//     sinusoidal_cut = 0;
+// }
+
+
+// unsigned char Signal_Get_Sinusoidal_Cut (void)
+// {
+//     return sinusoidal_cut;
+// }
+
+
+// int report_high = 0;
+// int high_cnt = 0;
+// int report_low = 0;
+// int low_cnt = 0;
+// void Signals_Set_Sinusoidal_High (treatment_conf_t * td, unsigned short value)
+// {
+//     Timer_Sine_Signal_Set ();
+
+//     if (!report_low)
+//     {
+//         printf("low_cnt: %d high value: %d\n", low_cnt, value);
+//         low_cnt = 0;
+//         report_low = 1;
+//         report_high = 0;
+//     }
+//     // else
+//     //     printf(" high_cnt: %d high value: %d\n", high_cnt, value);
     
-    high_cnt++;
+//     high_cnt++;
 
-}
+// }
 
 
-void Signals_Set_Sinusoidal_Low (treatment_conf_t * td, unsigned short value)
-{
-    Timer_Sine_Signal_Set ();    
+// void Signals_Set_Sinusoidal_Low (treatment_conf_t * td, unsigned short value)
+// {
+//     Timer_Sine_Signal_Set ();    
 
-    if (!report_high)
-    {
-        printf("high_cnt: %d low value: %d\n", high_cnt, value);
-        high_cnt = 0;       
-        report_high = 1;
-        report_low = 0;
-    }
-    // else
-    //     printf(" low_cnt: %d low value: %d\n", low_cnt, value);
+//     if (!report_high)
+//     {
+//         printf("high_cnt: %d low value: %d\n", high_cnt, value);
+//         high_cnt = 0;       
+//         report_high = 1;
+//         report_low = 0;
+//     }
+//     // else
+//     //     printf(" low_cnt: %d low value: %d\n", low_cnt, value);
     
-    low_cnt++;
-}
+//     low_cnt++;
+// }
 
-void Timer_Set_Registers (unsigned short psc, unsigned short arr)
+void Timer_Square_Set_Registers (unsigned short psc, unsigned short arr)
 {
     if (arr == 0)
         return;
@@ -381,9 +399,28 @@ void Timer_Set_Registers (unsigned short psc, unsigned short arr)
     float freq = (float) fclk / (float) arr;
 
     
-    printf(" setting timer scalers psc: %d arr: %d\n", psc, arr);
-    printf(" step time: %dus f1: %.1fHz f4: %.1fHz\n", step_us, freq, freq / 4);
+    printf(" square setting timer scalers psc: %d arr: %d\n", psc, arr);
+    printf(" square step time: %dus f1: %.1fHz f4: %.1fHz\n", step_us, freq, freq / 4);
 }
+
+
+void Timer_Sine_Set_Registers (unsigned short psc, unsigned short arr)
+{
+    if (arr == 0)
+        return;
+    
+    unsigned int fclk = 64000000;
+    fclk = fclk / (psc + 1);
+    unsigned int step_us = arr * 1000000 / fclk;
+    
+    float freq = (float) fclk / (float) arr;
+
+    
+    printf(" sine setting timer scalers psc: %d arr: %d\n", psc, arr);
+    printf(" sine step time: %dus f1: %.1fHz f4: %.1fHz\n", step_us, freq, freq / 4);
+}
+
+
 
 //--- end of file ---//
 

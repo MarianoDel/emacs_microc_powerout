@@ -143,7 +143,7 @@ resp_e Signals_Square (treatment_conf_t * pconf)
         td.freq_dec = pconf->freq_dec;
         resp = Signals_Timers_Calculation (&td);
 
-        if (resp == resp_ok)
+        if (resp == resp_ok)    // go out if not reporting the error
         {
             resp = resp_continue;
             
@@ -345,6 +345,14 @@ resp_e Signals_Timers_Calculation (timers_data_st * td)
     if (td->freq_int > 1000)
         return resp_error;
 
+    // decimal error?
+    if (td->freq_dec > 99)
+        return resp_error;
+
+    // two decimal points? go to only one
+    if (td->freq_dec > 9)
+        td->freq_dec = td->freq_dec / 10;
+    
     // no less than 0.1
     if ((td->freq_int == 0) && (td->freq_dec == 0))
         return resp_error;
@@ -544,6 +552,7 @@ void Signals_Stop (void)
 
     Timer_Sine_Signal_Stop();
     Signals_Sinusoidal_Reset();
+
     DAC_Output1(0);
 }
 
