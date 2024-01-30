@@ -510,19 +510,31 @@ void TIM8_Init (void)
     TIM8->CR1 = 0x0000;        //clk int / 1; upcounting;
     TIM8->CR2 = 0x0000;
 
-    TIM8->CCMR1 = 0x6060;    //CH2 CH1 output PWM mode 2 (channel active CNT < CCR1)
-    TIM8->CCMR2 = 0x6060;    //CH4 CH3 output PWM mode 2 (channel active CNT < CCR1)
+    TIM8->CCMR1 = 0x6000;    //CH2 output PWM mode 2 (channel active CNT < CCR1)
+    TIM8->CCMR2 = 0x0000;    //
 
-    // ch1 ch2 ch3 ch4 enabled    
-    TIM8->CCER |= TIM_CCER_CC4E | TIM_CCER_CC3E | TIM_CCER_CC2E | TIM_CCER_CC1E;
+    // ch2 enabled
+    TIM8->CCER = 0;    // start on a know state
+    TIM8->BDTR = 0;
+    TIM8->CCER |= TIM_CCER_CC2E | TIM_CCER_CC2NE;
     TIM8->BDTR |= TIM_BDTR_MOE;
     
-    // try to be near 7KHz
-    TIM8->ARR = DUTY_100_PERCENT - 1;    //1000 pwm points freq-> 72MHz / 10 = 7.2KHz
-    TIM8->PSC = 9;
+    // always on 0.3Hz
+    TIM8->CCR2 = 16666;
+    TIM8->ARR = 33333 - 1;
+    TIM8->PSC = 6399;
     
     // Enable the timer
     TIM8->CR1 |= TIM_CR1_CEN;
+}
+
+
+void TIM8_Stop (void)
+{
+    TIM8->CR1 = 0x0000;        //clk int / 1; upcounting;
+    TIM8->CR2 = 0x0000;
+    TIM8->CCER = 0;
+    TIM8->BDTR = 0;    
 }
 
 

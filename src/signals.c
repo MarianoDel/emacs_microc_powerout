@@ -139,26 +139,35 @@ resp_e Signals_Square (treatment_conf_t * pconf)
     {
     case SQUARE_INIT:
 
+        // calc timers registers
         td.freq_int = pconf->freq_int;
         td.freq_dec = pconf->freq_dec;
         resp = Signals_Timers_Calculation (&td);
 
-        if (resp == resp_ok)    // go out if not reporting the error
+        if (resp != resp_ok)    // frequency errors? go with defaults
         {
-            resp = resp_continue;
-            
-            // set values here
-            Signals_Calc_Square_Outputs (pconf);
-
-            // set timers here, check arr != 0
-            Timer_Square_Signal_Reset();
-            Timer_Square_Set_Registers (td.psc, td.arr_div_4);    //and start timer
-
-            // all updates done!
-            Signals_Reset_Frequency_Intensity_Change_Flag ();
-
-            square_state++;
+            td.freq_int = 40;
+            td.freq_dec = 0;
+            Signals_Timers_Calculation (&td);
         }
+        
+        // set output values
+        Signals_Calc_Square_Outputs (pconf);
+
+        // set timers here, check arr != 0
+        Timer_Square_Signal_Reset();
+        Timer_Square_Set_Registers (td.psc, td.arr_div_4);    //and start timer
+
+        // check and set polarity
+        // if POLARITY_ALT, set timer and start
+        // freq = 0.3Hz psc: 6399 arr: 33333 arr_4: 8333
+        Timer_Polarity (pconf->polarity);
+
+        // all updates done!
+        Signals_Reset_Frequency_Intensity_Change_Flag ();
+
+        resp = resp_continue;
+        square_state++;
         break;
 
     case SQUARE_FIRST_EDGE:
@@ -232,23 +241,31 @@ resp_e Signals_Sinusoidal (treatment_conf_t * pconf)
         td.freq_dec = pconf->freq_dec;
         resp = Signals_Timers_Calculation (&td);
 
-        if (resp == resp_ok)
+        if (resp != resp_ok)    // frequency errors? go with defaults
         {
-            resp = resp_continue;
-
-            // set values here
-            Signals_Calc_Sinusoidal_Outputs (pconf);
-
-            // set timers here, square_cut & sinusoidal (always same freq)!!!
-            Timer_Square_Set_Registers (td.psc, td.arr);
-            Timer_Sine_Set_Registers (63, 13019);    // 0.3Hz * 256 points -> 13.02ms
-
-            // all updates done!
-            Signals_Reset_Frequency_Intensity_Change_Flag ();
-            
-            square_cut_state = SQUARE_NO_CUTTING;
-            sine_state++;
+            td.freq_int = 40;
+            td.freq_dec = 0;
+            Signals_Timers_Calculation (&td);
         }
+
+        // set values here
+        Signals_Calc_Sinusoidal_Outputs (pconf);
+
+        // set timers here, square_cut & sinusoidal (always same freq)!!!
+        Timer_Square_Set_Registers (td.psc, td.arr);
+        Timer_Sine_Set_Registers (639, 651);    // 0.6Hz * 256 points -> 6.51ms
+
+        if (pconf->polarity != POLARITY_ALT)
+            Timer_Polarity(pconf->polarity);
+        else
+            Timer_Polarity_Always_Left();
+
+        // all updates done!
+        Signals_Reset_Frequency_Intensity_Change_Flag ();
+            
+        square_cut_state = SQUARE_NO_CUTTING;
+        resp = resp_continue;
+        sine_state++;
         break;
 
     case SINE_HIGH_HALF:
@@ -269,6 +286,10 @@ resp_e Signals_Sinusoidal (treatment_conf_t * pconf)
             else
             {
                 psine = sinusoidal_table;
+
+                if (pconf->polarity == POLARITY_ALT)
+                    Timer_Polarity_Always_Right();
+                
                 sine_state = SINE_LOW_HALF;
             }
         }
@@ -292,6 +313,10 @@ resp_e Signals_Sinusoidal (treatment_conf_t * pconf)
             else
             {
                 psine = sinusoidal_table;
+
+                if (pconf->polarity == POLARITY_ALT)
+                    Timer_Polarity_Always_Left();
+
                 if (Signals_Get_Frequency_Intensity_Change_Flag ())
                     sine_state = SINE_INIT;
                 else
@@ -453,21 +478,33 @@ void Signals_Calc_Sinusoidal_Outputs (treatment_conf_t * pconf)
     calc = calc / 100;
     peak_curr = Signals_Current_to_VoltagePts (calc);
 
-    calc = peak_curr * 75;
-    calc = calc / 100;    //75% of peak
+    if (pconf->polarity == POLARITY_ALT)
+    {
+        // special case high & low are the same
+        if (peak_curr > 4095)
+            peak_curr = 4095;
+
+        pconf->itov_low = peak_curr;
+        pconf->itov_high = peak_curr;
+    }
+    else
+    {
+        calc = peak_curr * 75;
+        calc = calc / 100;    //75% of peak
     
-    if (calc > 4095)
-        calc = 4095;
+        if (calc > 4095)
+            calc = 4095;
 
-    pconf->itov_low = calc;
+        pconf->itov_low = calc;
 
-    calc = peak_curr * 125;
-    calc = calc / 100;    //125% of peak
+        calc = peak_curr * 125;
+        calc = calc / 100;    //125% of peak
 
-    if (calc > 4095)
-        calc = 4095;
+        if (calc > 4095)
+            calc = 4095;
 
-    pconf->itov_high = calc;
+        pconf->itov_high = calc;
+    }
 }
 
 

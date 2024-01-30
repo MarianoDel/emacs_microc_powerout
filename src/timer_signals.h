@@ -9,7 +9,7 @@
 #ifndef _TIMER_SIGNALS_H_
 #define _TIMER_SIGNALS_H_
 
-
+#include "treatment.h"
 // Module Exported Types Constants and Macros ----------------------------------
 
 
@@ -26,7 +26,9 @@ void Timer_Sine_Signal_Reset (void);
 // void Timer_Sine_Signal_Set (void);
 void Timer_Sine_Signal_Stop (void);
 
-
+void Timer_Polarity (polarity_e new_polarity);
+void Timer_Polarity_Always_Right (void);
+void Timer_Polarity_Always_Left (void);
 #endif    /* _TIMER_SIGNALS_H_ */
 
 //--- end of file ---//

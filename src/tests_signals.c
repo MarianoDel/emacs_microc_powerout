@@ -94,8 +94,8 @@ void Test_Signals_Timers_Calc_Single_Freq (void)
     timers_data_st td;
 
     // set single frequency to test
-    td.freq_int = 100;
-    td.freq_dec = 80;
+    td.freq_int = 0;
+    td.freq_dec = 30;
 
     resp = Signals_Timers_Calculation (&td);
 

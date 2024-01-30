@@ -132,17 +132,17 @@ void GpioInit (void)
     // GPIOA->ODR = temp;
 
     //--- GPIOB Low Side -------------------//
-    //PB0 NC
+    //PB0 alternative TIM8_CH2N
     //PB1 NC
-    //PB2 PROT_CH3 input
-    //PB3 NC
-    //PB4 NC
-    //PB5 SW_RX_TX    RS485
-    //PB6 
-    //PB7 alternative TIM4_CH2
+    //PB2 NC
+    //PB3 NC jtag
+    //PB4 NC jtag
+    //PB5 NC
+    //PB6 NC
+    //PB7 NC
     temp = GPIOB->CRL;
-    temp &= 0x0F0FF0FF;
-    temp |= 0xA0200400;
+    temp &= 0xFFFFFFF0;
+    temp |= 0x0000000A;
     GPIOB->CRL = temp;
 
     //--- GPIOB High Side -------------------//
@@ -166,25 +166,25 @@ void GpioInit (void)
     //PC3 NC
     //PC4 Sense 200V ADC Channel 14
     //PC5 Sense 15V ADC Channel 15
-    //PC6 alternative TIM8_CH1
+    //PC6 NC
     //PC7 alternative TIM8_CH2
     temp = GPIOC->CRL;
-    temp &= 0x0000FF00;
-    temp |= 0xAA000022;
+    temp &= 0x0F00FF00;
+    temp |= 0xA0000022;
     GPIOC->CRL = temp;
 
     //--- GPIOC High Side -------------------//
-    //PC8 alternative TIM8_CH3
-    //PC9 alternative TIM8_CH4
-    //PC10 alternative Tx Uart4
-    //PC11 alternativo Rx Uart4
-    //PC12 alternativo Tx Uart5
+    //PC8 NC
+    //PC9 NC
+    //PC10 NC
+    //PC11 NC
+    //PC12 NC
     //PC13 NC
     //PC14 NC    oscillator
     //PC15 NC    oscillator
     temp = GPIOC->CRH;   
-    temp &= 0xFFF00000;
-    temp |= 0x000B8BAA;
+    temp &= 0xFFFFFFFF;
+    temp |= 0x00000000;
     GPIOC->CRH = temp;
 
     //--- GPIOD Low Side -------------------//

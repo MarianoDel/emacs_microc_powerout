@@ -253,6 +253,9 @@ resp_e Treatment_SetPolarity_Str (char * str)
         resp = resp_ok;        
     }
 
+    if (resp == resp_ok)
+        Signals_Set_Frequency_Intensity_Change_Flag ();
+    
     return resp;
 }
 

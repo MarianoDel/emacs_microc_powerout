@@ -74,6 +74,7 @@ void TIM7_Stop (void);
 
 // Timer 8 Functions
 void TIM8_Init (void);
+void TIM8_Stop (void);
 void TIM8_Update_CH1 (unsigned short a);
 void TIM8_Update_CH2 (unsigned short a);
 void TIM8_Update_CH3 (unsigned short a);
