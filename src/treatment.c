@@ -17,6 +17,7 @@
 
 #include "signals.h"
 #include "utils.h"
+#include "comms_probe.h"
 
 
 #include <string.h>
@@ -59,6 +60,8 @@ probe_comms_e probe_comm_state = 0;
 // Module Functions ------------------------------------------------------------
 void Treatment_Manager (void)
 {
+    unsigned char start_flag = 0;
+    
     switch (treat_state)
     {
     case TREATMENT_INIT:
@@ -74,10 +77,19 @@ void Treatment_Manager (void)
         }
         break;
         
-    case TREATMENT_STANDBY_WITH_COMMS:    // AND MEASUREMENTS        
+    case TREATMENT_STANDBY_WITH_COMMS:    // AND MEASUREMENTS
+        
         if (Treatment_Start_Flag ())
         {
             Treatment_Start_Flag_Reset ();
+
+            if (Probe_Get_Status () == CONN_STABLISH)
+                start_flag = 1;
+        }
+        
+        if (start_flag)
+        {
+
             if (treatment_conf.mode == MODE_SQUARE)
             {
                 Usart1Send("starting square\r\n");

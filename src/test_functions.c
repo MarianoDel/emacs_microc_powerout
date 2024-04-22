@@ -193,7 +193,7 @@ void TF_Adc_Usart1_Tx (void)
     
     //Uso ADC con DMA
     AdcConfig();
-    // ADC_START;
+    ADC_START;
 
     Usart1Config ();
     

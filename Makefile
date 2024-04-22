@@ -80,7 +80,7 @@ SRC += ./src/utils.c
 SRC += ./src/timer_signals.c
 SRC += ./src/test_functions.c
 
-# SRC += ./src/comms_channels.c
+SRC += ./src/comms_probe.c
 # SRC += ./src/antennas.c
 # SRC += ./src/signals.c
 # SRC += ./src/errors.c

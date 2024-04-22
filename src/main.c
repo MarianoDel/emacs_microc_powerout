@@ -23,7 +23,7 @@
 #include "comms.h"
 #include "test_functions.h"
 #include "treatment.h"
-// #include "comms_channels.h"
+#include "comms_probe.h"
 // #include "parameters.h"
 
 
@@ -88,7 +88,7 @@ int main (void)
     Usart1Config ();
 
     //-- Comms with probes
-    // Usart3Config ();
+    Usart3Config ();
 
     //-- TIM1 for signals module sequence ready
     TIM6_Init();
@@ -103,6 +103,9 @@ int main (void)
 
         // update the channels comms
         Comms_Update ();
+
+        // update the probe comms
+        Probe_Comms_Update ();
 
         // update treatment state
         Treatment_Manager();
@@ -165,7 +168,7 @@ void TimingDelay_Decrement(void)
     if (timer_standby)
         timer_standby--;
 
-// AntennaTimeouts ();
+    Comms_Probe_Timeout ();
 
     // Treatment_Timeouts ();
     

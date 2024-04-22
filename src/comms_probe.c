@@ -8,19 +8,27 @@
 
 // Includes --------------------------------------------------------------------
 #include "comms_probe.h"
-#include "channels_defs.h"
-#include "answers_defs.h"
 #include "usart.h"
-#include "antennas.h"
-#include "utils.h"
+#include "treatment.h"
 
 
 #include <string.h>
 #include <stdio.h>
 
 
+// Module Private Types Constants and Macros -----------------------------------
 #define SIZEOF_RXDATA    128
-#define RpiSend(X)    Usart1Send(X)
+#define KEEP_ALIVE_CNTR    3
+#define KEEP_ALIVE_TT    1000
+
+typedef enum {
+    INIT_SEARCH,
+    NO_CONN,
+    IN_STANDBY
+    
+} probe_status_e;
+    
+
 
 // Externals -------------------------------------------------------------------
 
@@ -29,33 +37,28 @@
 char buff [SIZEOF_RXDATA] = { 0 };
 char s_ok [] = {"OK\r\n"};
 char s_nok [] = {"ERROR\r\n"};
-
+volatile unsigned short keep_alive_timer = 0;
+unsigned char probe_keep_cnt = 0;
+probe_connection_e probe_connection = CONN_RESET;
+probe_status_e probe_status = INIT_SEARCH;
 
 
 // Module Private Functions ----------------------------------------------------
-resp_e ParseCommsWithChannels (char * str, unsigned char channel);
-resp_e ParseCurrentTemp (char * str, unsigned char * t_int, unsigned char * t_dec);
-resp_e ParseAntennaParams (char * str, antenna_st * antenna);
+void ParseCommsWithProbe (char * str);
+void Probe_Set_Connection (probe_connection_e new_conn_status);
 
 
 
 // Module Functions ------------------------------------------------------------
-//channel 1, connected to usart2
-void Comms_Channel1 (void)
+void Comms_Probe_Timeout (void)
 {
-    if (Usart2HaveData())
-    {
-        Usart2HaveDataReset();
-        
-        Usart2ReadBuffer (buff, SIZEOF_RXDATA);
-
-        ParseCommsWithChannels((char *) buff, CH1);            
-    }
+    if (keep_alive_timer)
+        keep_alive_timer--;
 }
 
 
-//channel 2, connected to usart3
-void Comms_Channel2 (void)
+// probes connected to usart3
+void Comms_Probe (void)
 {
     if (Usart3HaveData ())
     {
@@ -63,209 +66,105 @@ void Comms_Channel2 (void)
         
         Usart3ReadBuffer (buff, SIZEOF_RXDATA);
 
-        ParseCommsWithChannels((char *) buff, CH2);
+        ParseCommsWithProbe(buff);
     }
 }
 
 
-//channel 3, connected to uart4
-void Comms_Channel3 (void)
+void ParseCommsWithProbe (char * str)
 {
-    if (Uart4HaveData())
-    {
-        Uart4HaveDataReset ();
-        
-        Uart4ReadBuffer (buff, SIZEOF_RXDATA);
+    char dummy_str [40] = { 0 };
 
-        ParseCommsWithChannels((char *) buff, CH3);
+    // antenna name
+    // name Probe1\r\n
+    if (!strncmp(str, "name ", (sizeof("name ") - 1)))
+    {
+        sprintf (dummy_str, "new probe %s\r\n", str + 5);
+        Usart1Send (dummy_str);
+        Probe_Set_Connection (CONN_NEW);
+        // Wait_ms(2);
+        // Usart3Send ("keepalive\r\n");
     }
+
+    // keepalive answer
+    else if (!strncmp(str, "ok", (sizeof("ok") - 1)))
+    {
+        if (probe_keep_cnt < KEEP_ALIVE_CNTR)
+            probe_keep_cnt++;
+    }
+
+    else if (!strncmp(str, "start", (sizeof("start") - 1)))
+    {
+        Treatment_Start ();
+        if (probe_keep_cnt < KEEP_ALIVE_CNTR)
+            probe_keep_cnt++;
+    }    
 }
 
 
-//channel 4, connected to uart5
-void Comms_Channel4 (void)
+unsigned char Probe_Get_Status (void)
 {
-    if (Uart5HaveData ())
-    {
-        Uart5HaveDataReset ();
-        
-        Uart5ReadBuffer (buff, SIZEOF_RXDATA);
-
-        ParseCommsWithChannels((char *) buff, CH4);
-        
-        // char buff2 [100] = { 0 };
-        // sprintf(buff2, "<- %s\n", buff);
-        // Usart1Send(buff2);
-    }
+    return probe_connection;
 }
 
 
-resp_e ParseCommsWithChannels (char * str, unsigned char channel)
+void Probe_Set_Connection (probe_connection_e new_conn_status)
 {
-    resp_e resp = resp_error;
-    char dummy_str [30] = { 0 };
-    
-    // rcv temp,055.00\r\n
-    // snd temp,055.00,1\r\n    1 to 4
-    if (!strncmp(str, (const char *)"temp", (sizeof("temp") - 1)))
+    probe_connection = new_conn_status;
+}
+
+
+void Probe_Comms_Update (void)
+{
+    switch (probe_status)
     {
-        if ((*(str + 4) == ',') &&
-            (*(str + 8) == '.'))
-        // if ((*(str + 4) == ',') &&
-        //     (*(str + 8) == '.') &&
-        //     (*(str + 11) == '\r'))
+    case INIT_SEARCH:
+        // get ready for a new antenna search
+        Probe_Set_Connection (CONN_RESET);
+        probe_status++;
+        break;
+
+    case NO_CONN:
+        // wait for probe name/connect
+        if (Probe_Get_Status () == CONN_NEW)
         {
-            unsigned char temp_i = 0;
-            unsigned char temp_d = 0;
+            probe_keep_cnt = KEEP_ALIVE_CNTR + 1;    // +1 for first keepalive
+            probe_status++;
 
-            if (ParseCurrentTemp(str, &temp_i, &temp_d) == resp_ok)
+            //from here if we get name again, its a reconnect            
+            Probe_Set_Connection (CONN_STABLISH);
+            keep_alive_timer = 10;
+        }
+        break;
+        
+    case IN_STANDBY:
+        if (!keep_alive_timer)
+        {
+            if (probe_keep_cnt)
             {
-                AntennaSetCurrentTemp (channel, temp_i, temp_d);
-
-                sprintf(dummy_str, ",%d\r\n", channel + 1);
-                strcpy((str + 11), dummy_str);
-                RpiSend(str);
-                resp = resp_ok;
+                probe_keep_cnt--;
+                Usart3Send ("keepalive\r\n");
+                keep_alive_timer = KEEP_ALIVE_TT;
+            }
+            else
+            {
+                // connection lost
+                probe_status = INIT_SEARCH;                
             }
         }
-    }
 
-    //ant0,012.27,087.90,001.80,065.00\r\n.
-    else if (!strncmp(str, (const char *)"ant", (sizeof("ant") - 1)))
-    {
-        // check if antenna is new and process string, or tell the interface the error
-        if (*(str + sizeof("ant0,012.27,087.90,001.80,065.") - 1) != '5')
-        {
-            sprintf(dummy_str, "old antenna ch%d\r\n", channel + 1);
-            RpiSend(dummy_str);
-            return resp_error;
-        }
+        // reconnection? or new antenna
+        if (Probe_Get_Status () == CONN_NEW)
+            probe_status = INIT_SEARCH;
         
-        sprintf(dummy_str, "new antenna ch%d\r\n", channel + 1);
-        RpiSend(dummy_str);
+        break;
 
-        if ((*(str + 4) == ',') &&
-            (*(str + 11) == ',') &&
-            (*(str + 18) == ',') &&
-            (*(str + 25) == ','))
-        {
-            antenna_st antenna_aux;
-            if (ParseAntennaParams ((char *) buff, &antenna_aux) == resp_ok)
-            {
-                AntennaSetParamsStruct (channel, &antenna_aux);
-                resp = resp_ok;
-            }
-        }
+    default:
+        probe_status = INIT_SEARCH;
+        break;
     }
 
-    //respuesta al keepalive
-    else if (!strncmp(str, (const char *)"ok", (sizeof("ok") - 1)))
-    {
-        AntennaIsAnswering(channel);
-        resp = resp_ok;
-    }
-
-    else if ((!strncmp(str, (const char *)"name:", sizeof("name:") - 1)))
-    {
-        AntennaSetName(channel, (str + (sizeof("name:") - 1)));
-        resp = resp_ok;
-    }
-
-    return resp;
+    Comms_Probe ();
 }
-
-
-resp_e ParseAntennaParams (char * str, antenna_st * antenna)
-{
-    unsigned short i = 0;
-
-    // check all the strings first, then do the load    
-    if ((StringCheckNumbers((str + 5), 3) == 3) &&
-        (StringCheckNumbers((str + 9), 2) == 2) &&
-        (StringCheckNumbers((str + 12), 3) == 3) && 
-        (StringCheckNumbers((str + 16), 2) == 2) &&
-        (StringCheckNumbers((str + 19), 3) == 3) &&
-        (StringCheckNumbers((str + 23), 2) == 2) &&
-        (StringCheckNumbers((str + 26), 3) == 3) &&
-        (StringCheckNumbers((str + 30), 2) == 2))
-    {
-        i = (*(str + 5) - '0') * 100;
-        i += (*(str + 6) - '0') * 10;
-        i += (*(str + 7) - '0');
-        
-        antenna->resistance_int = i;
-
-        i = (*(str + 9) - '0') * 10;
-        i += (*(str + 10) - '0');
-
-        antenna->resistance_dec = i;
-
-        i = (*(str + 12) - '0') * 100;
-        i += (*(str + 13) - '0') * 10;
-        i += (*(str + 14) - '0');
-
-        antenna->inductance_int = i;
-
-        i = (*(str + 16) - '0') * 10;
-        i += (*(str + 17) - '0');
-
-        antenna->inductance_dec = i;
-
-        i = (*(str + 19) - '0') * 100;
-        i += (*(str + 20) - '0') * 10;
-        i += (*(str + 21) - '0');
-
-        antenna->current_limit_int = i;
-
-        i = (*(str + 23) - '0') * 10;
-        i += (*(str + 24) - '0');
-
-        antenna->current_limit_dec = i;
-
-        i = (*(str + 26) - '0') * 100;
-        i += (*(str + 27) - '0') * 10;
-        i += (*(str + 28) - '0');
-
-        antenna->temp_max_int = i;
-
-        i = (*(str + 30) - '0') * 10;
-        i += (*(str + 31) - '0');
-
-        antenna->temp_max_dec = i;
-
-        return resp_ok;
-    }
-
-    return resp_error;
-}
-
-
-resp_e ParseCurrentTemp (char * str, unsigned char * t_int, unsigned char * t_dec)
-{
-    unsigned short i = 0;
-    unsigned short d = 0;
-
-    if (StringCheckNumbers((str + 5), 3) == 3)
-    {
-        i = (*(str + 5) - '0') * 100;
-        i += (*(str + 6) - '0') * 10;
-        i += (*(str + 7) - '0');
-        *t_int = i;
-    }
-    else
-        return resp_error;
-
-    if (StringCheckNumbers((str + 9), 2) == 2)
-    {
-        d = (*(str + 9) - '0') * 10;
-        d += (*(str + 10) - '0');
-        *t_dec = d;
-    }
-    else
-        return resp_error;
-
-    return resp_ok;
-}
-
 
 //---- end of file ----//

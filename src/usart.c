@@ -532,11 +532,13 @@ void USART3_IRQHandler (void)
 
         if (prx3 < &rx3buff[SIZEOF_RXDATA - 1])
         {
-            // USART3->DR = (unsigned char) dummy;    //para debug
-
-            if ((dummy == '\n') || (dummy == '\r') || (dummy == 26))		//26 es CTRL-Z
+            //al /r no le doy bola
+            if (dummy == '\r')
             {
-                *prx3 = '\0';
+            }            
+            else if ((dummy == '\n') || (dummy == 26))		//26 es CTRL-Z
+            {
+                *prx1 = '\0';
                 usart3_have_data = 1;
             }
             else
