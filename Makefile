@@ -72,7 +72,7 @@ SRC += ./src/dma.c
 SRC += ./src/hard.c
 SRC += ./src/dac.c
 
-# SRC += ./src/dsp.c
+SRC += ./src/dsp.c
 SRC += ./src/treatment.c
 SRC += ./src/signals.c
 SRC += ./src/comms.c
@@ -81,6 +81,7 @@ SRC += ./src/timer_signals.c
 SRC += ./src/test_functions.c
 
 SRC += ./src/comms_probe.c
+SRC += ./src/meas.c
 # SRC += ./src/antennas.c
 # SRC += ./src/signals.c
 # SRC += ./src/errors.c

@@ -18,6 +18,8 @@
 #include "signals.h"
 #include "utils.h"
 #include "comms_probe.h"
+#include "meas.h"
+#include "timer_signals.h"
 
 
 #include <string.h>
@@ -61,6 +63,7 @@ probe_comms_e probe_comm_state = 0;
 void Treatment_Manager (void)
 {
     unsigned char start_flag = 0;
+    unsigned char meas_to_report = 0;
     
     switch (treat_state)
     {
@@ -73,6 +76,11 @@ void Treatment_Manager (void)
         if (Comms_Rpi_Answering())
         {
             ChangeLed_With_Timer (LED_TREATMENT_STANDBY, 0);
+
+            // for square negative meas
+            if (treatment_conf.mode == MODE_SQUARE)
+                Timer_Polarity (POLARITY_NEG);
+            
             treat_state++;
         }
         break;
@@ -106,6 +114,15 @@ void Treatment_Manager (void)
             }            
         }
 
+        // get meas and report every 400ms
+        if (Meas_Square (&meas_to_report))
+        {
+            // new meas filtered value, report it
+            char buff [40];
+            sprintf(buff, "display %d\r\n", meas_to_report);
+            Usart1Send(buff);
+        }
+        
         // if (!Comms_Rpi_Answering())
         // {
         //     ChangeLed_With_Timer (LED_TREATMENT_STANDBY, 4000);
@@ -141,6 +158,10 @@ void Treatment_Manager (void)
         Signals_Stop ();
 
         Usart1Send("stopped\r\n");
+
+        // for square negative meas
+        if (treatment_conf.mode == MODE_SQUARE)
+            Timer_Polarity (POLARITY_NEG);
 
         ChangeLed(LED_TREATMENT_STANDBY);
         treat_state = TREATMENT_STANDBY_WITH_COMMS;
@@ -360,6 +381,7 @@ resp_e Treatment_SetGain (unsigned short gain)
     if (gain <= 100)
     {
         treatment_conf.gain = gain;
+        Meas_Square_Set_Dac_Gain(gain);
         resp = resp_ok;
     }
 

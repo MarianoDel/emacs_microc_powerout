@@ -359,6 +359,12 @@ unsigned char AdcConvertSingleChannelFinishFlag (void)
 }
 
 
+unsigned short AdcConvertChannelResult (void)
+{
+    return ADC1->DR;
+}
+
+
 //--- end of file ---//
 
 

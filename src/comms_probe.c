@@ -76,6 +76,37 @@ void ParseCommsWithProbe (char * str)
     char dummy_str [40] = { 0 };
 
     // antenna name
+    
+    // // new model name Probe1.\r\n
+    // if (!strncmp(str, "name ", (sizeof("name ") - 1)))
+    // {
+    //     char sname [21] = { 0 };        
+    //     char * ps = str + 5;
+    //     int finded = 0;
+        
+    //     for (int i = 0; i < 20; i++)
+    //     {
+    //         if (*(ps + i) == '.')
+    //         {
+    //             if (i > 1)    // at least two chars
+    //             {
+    //                 finded = 1;
+    //                 break;
+    //             }
+    //         }
+    //         else
+    //             sname[i] = *(ps + i);
+
+    //     }
+
+    //     if (finded)
+    //     {
+    //         sprintf (dummy_str, "new probe %s\r\n", sname);
+    //         Usart1Send (dummy_str);
+    //         Probe_Set_Connection (CONN_NEW);
+    //     }
+    // }
+    
     // name Probe1\r\n
     if (!strncmp(str, "name ", (sizeof("name ") - 1)))
     {

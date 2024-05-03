@@ -24,7 +24,7 @@
 #include "test_functions.h"
 #include "treatment.h"
 #include "comms_probe.h"
-// #include "parameters.h"
+#include "meas.h"
 
 
 #include <stdio.h>
@@ -83,6 +83,7 @@ int main (void)
     //-- DAC init for signal generation
     DAC_Config ();
     DAC_Output1(1400);
+    DAC_Output2(0);    
     
     //-- Comms with rasp
     Usart1Config ();
@@ -94,7 +95,9 @@ int main (void)
     TIM6_Init();
     TIM7_Init();
     
-
+    //-- Activate meas module
+    Meas_Square_Init ();
+    
     //-- Main Loop --------------------------
     while (1)
     {
@@ -169,6 +172,8 @@ void TimingDelay_Decrement(void)
         timer_standby--;
 
     Comms_Probe_Timeout ();
+
+    Meas_Timeout ();
 
     // Treatment_Timeouts ();
     
