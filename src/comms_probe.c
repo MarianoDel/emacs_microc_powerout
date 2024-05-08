@@ -126,7 +126,8 @@ void ParseCommsWithProbe (char * str)
 
     else if (!strncmp(str, "start", (sizeof("start") - 1)))
     {
-        Treatment_Start ();
+        Usart1Send ("probe start\r\n");
+        // Treatment_Start ();
         if (probe_keep_cnt < KEEP_ALIVE_CNTR)
             probe_keep_cnt++;
     }    

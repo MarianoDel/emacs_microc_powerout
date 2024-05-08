@@ -53,6 +53,9 @@ unsigned char dac_gain_saved = 0;
 // Module Private Functions ----------------------------------------------------
 unsigned char Meas_Calc_Display_Value (unsigned short reference, unsigned short meas);
 void Meas_Set_Dac (unsigned char dac_gain);
+unsigned int Meas_Online_Calc_Resistance (unsigned short current_itov,
+                                          unsigned short meas_hg,
+                                          unsigned short meas_lg);
 
 
 // Module Functions ------------------------------------------------------------
@@ -203,4 +206,95 @@ unsigned char Meas_Calc_Display_Value (unsigned short reference, unsigned short 
     
     return (unsigned char) calc;
 }
+
+
+typedef enum {
+    MEAS_ONLINE_START_LG,
+    MEAS_ONLINE_WAIT_ADC_LG,
+    MEAS_ONLINE_START_HG,
+    MEAS_ONLINE_WAIT_ADC_HG
+    
+} meas_online_e;
+    
+meas_online_e meas_online_state = MEAS_ONLINE_START_LG;
+unsigned short meas_low_gain = 0;
+unsigned short meas_high_gain = 0;
+unsigned char Meas_Online (unsigned short current_itov, unsigned int * result)
+{
+    unsigned char new_convertion = 0;
+    
+    switch (meas_online_state)
+    {
+    case MEAS_ONLINE_START_LG:
+        AdcConvertChannel (Sense_Power);
+        meas_online_state++;
+        break;
+
+    case MEAS_ONLINE_WAIT_ADC_LG:
+        if (AdcConvertSingleChannelFinishFlag ())
+        {
+            meas_high_gain = AdcConvertChannelResult ();
+            meas_online_state++;
+        }
+        break;
+
+    case MEAS_ONLINE_START_HG:
+        AdcConvertChannel (Sense_Meas);
+        meas_online_state++;
+        break;
+
+    case MEAS_ONLINE_WAIT_ADC_HG:
+        if (AdcConvertSingleChannelFinishFlag ())
+        {
+            meas_low_gain = AdcConvertChannelResult ();
+            *result = Meas_Online_Calc_Resistance (
+                current_itov,
+                meas_high_gain,
+                meas_low_gain);
+            
+            meas_online_state = MEAS_ONLINE_START_LG;
+            new_convertion = 1;
+        }
+        break;
+        
+    default:
+        meas_online_state = MEAS_ONLINE_START_LG;
+        break;
+    }
+    
+    return new_convertion;
+}
+
+
+#define CURRENT_POWER_RESISTENCE    3300
+#define MULTIPLIER_LOW    11
+#define MULTIPLIER_HIGH    2
+unsigned int Meas_Online_Calc_Resistance (unsigned short current_itov,
+                                          unsigned short meas_hg,
+                                          unsigned short meas_lg)
+{
+    if (!current_itov)
+        return 0;
+
+    // voltage over 3k3 is output current
+    // meas_lg is voltage over Rx multiplied by 0.0909 (1/11)
+    // or meas_hg is voltage over Rx multiplied by 0.5 (1/2)
+    unsigned int calc = 0;
+
+    
+    if (meas_hg < 4000)    // use high gain circuit for calcs
+    {
+        calc = meas_hg * MULTIPLIER_HIGH * CURRENT_POWER_RESISTENCE;
+        calc = calc / current_itov;
+    }
+    else    // use low gain circuits
+    {
+        calc = meas_lg * MULTIPLIER_LOW * CURRENT_POWER_RESISTENCE;
+        calc = calc / current_itov;        
+    }
+
+    return  calc;
+}
+
+
 //--- end of file ---//

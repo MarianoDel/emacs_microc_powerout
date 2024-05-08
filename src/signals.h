@@ -12,9 +12,6 @@
 
 #include "answers_defs.h"
 #include "treatment.h"
-// #include "hard.h"
-// #include "antennas_defs.h"
-// #include "signals_defs.h"
 
 
 // Module Exported Types Constants and Macros ----------------------------------
