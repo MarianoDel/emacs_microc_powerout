@@ -64,10 +64,12 @@ void Treatment_Manager (void)
 {
     unsigned char start_flag = 0;
     unsigned char meas_to_report = 0;
+    unsigned short cond_to_report = 0;    
     
     switch (treat_state)
     {
     case TREATMENT_INIT:
+        Signals_Stop ();
         ChangeLed_With_Timer (LED_TREATMENT_STANDBY, 4000);
         treat_state++;
         break;
@@ -115,14 +117,16 @@ void Treatment_Manager (void)
         }
 
         // get meas and report every 400ms
-        if (Meas_Square (&meas_to_report))
+        if (treatment_conf.mode == MODE_SQUARE)
         {
-            // new meas filtered value, report it
-            char buff [40];
-            sprintf(buff, "display %d\r\n", meas_to_report);
-            Usart1Send(buff);
+            if (Meas_Square (&meas_to_report))
+            {
+                // new meas filtered value, report it
+                char buff [40];
+                sprintf(buff, "display %d\r\n", meas_to_report);
+                Usart1Send(buff);
+            }
         }
-        
         // if (!Comms_Rpi_Answering())
         // {
         //     ChangeLed_With_Timer (LED_TREATMENT_STANDBY, 4000);
@@ -151,6 +155,14 @@ void Treatment_Manager (void)
             treat_state = TREATMENT_STOPPING;
         }
 
+        if (Meas_Sine_Update (&cond_to_report))
+        {
+            // new meas filtered value, report it
+            char buff [40];
+            sprintf(buff, "c %d\r\n", cond_to_report);
+            Usart1Send(buff);
+        }
+        
         // go out if not comms?        
         break;
                 
@@ -381,7 +393,7 @@ resp_e Treatment_SetGain (unsigned short gain)
     if (gain <= 100)
     {
         treatment_conf.gain = gain;
-        Meas_Square_Set_Dac_Gain(gain);
+        Meas_Square_Set_Dac_Gain(gain);        
         resp = resp_ok;
     }
 

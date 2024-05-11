@@ -181,7 +181,8 @@ void Probe_Comms_Update (void)
             else
             {
                 // connection lost
-                probe_status = INIT_SEARCH;                
+                probe_status = INIT_SEARCH;
+                Usart1Send("none probe\r\n");
             }
         }
 

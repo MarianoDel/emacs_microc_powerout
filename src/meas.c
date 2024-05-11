@@ -44,6 +44,7 @@ extern volatile unsigned short adc_ch[];
 volatile unsigned short meas_timeout = 0;
 ma32_u16_data_obj_t ref_filter;
 ma32_u16_data_obj_t meas_filter;
+ma32_u16_data_obj_t display_filter;
 unsigned short ref_filtered = 0;
 unsigned short meas_filtered = 0;
 unsigned char dac_gain_saved = 0;
@@ -56,6 +57,8 @@ void Meas_Set_Dac (unsigned char dac_gain);
 unsigned int Meas_Online_Calc_Resistance (unsigned short current_itov,
                                           unsigned short meas_hg,
                                           unsigned short meas_lg);
+unsigned int Meas_Sine_Calc_Conductivity (unsigned short dac_value,
+                                          unsigned short adc_voltage);
 
 
 // Module Functions ------------------------------------------------------------
@@ -133,7 +136,11 @@ unsigned char Meas_Square (unsigned char * result)
             else
             {
                 meas_state = SET_REFERENCE;
-                *result = Meas_Calc_Display_Value (ref_filtered, meas_filtered);
+                // *result = Meas_Calc_Display_Value (ref_filtered, meas_filtered);
+                // new_convertion = 1;
+                unsigned char disp_to_filter;
+                disp_to_filter = Meas_Calc_Display_Value (ref_filtered, meas_filtered);
+                *result = MA32_U16Circular(&display_filter, disp_to_filter);
                 new_convertion = 1;
             }
         }
@@ -185,6 +192,7 @@ void Meas_Square_Init (void)
     // init meas filter
     MA32_U16Circular_Reset (&ref_filter);
     MA32_U16Circular_Reset (&meas_filter);
+    MA32_U16Circular_Reset (&display_filter);
     
 }
 
@@ -296,5 +304,97 @@ unsigned int Meas_Online_Calc_Resistance (unsigned short current_itov,
     return  calc;
 }
 
+typedef enum {
+    MEAS_SINE_WAIT_FOR_START,
+    MEAS_SINE_START,
+    MEAS_SINE_WAIT_ADC,
+    MEAS_SINE_CALC_CONDUCTIVITY,
+    MEAS_SINE_SEND
+    
+} meas_sine_e;
+
+meas_sine_e meas_sine_state = MEAS_SINE_WAIT_FOR_START;
+unsigned short meas_sine_dac = 0;
+unsigned short meas_sine_voltage = 0;
+unsigned short meas_sine_conductivity = 0;
+void Meas_Sine (unsigned short dac_value)
+{
+    if (meas_sine_state != MEAS_SINE_WAIT_FOR_START)
+        return;
+
+    meas_sine_dac = dac_value;
+    meas_sine_state = MEAS_SINE_START;        
+}
+
+
+unsigned char Meas_Sine_Update (unsigned short * conductivity)
+{
+    unsigned char new_convertion = 0;
+    
+    switch (meas_sine_state)
+    {
+    case MEAS_SINE_WAIT_FOR_START:
+        break;
+
+    case MEAS_SINE_START:
+        AdcConvertChannel (Sense_Power);
+        meas_sine_state++;
+        break;
+        
+    case MEAS_SINE_WAIT_ADC:
+        if (AdcConvertSingleChannelFinishFlag ())
+        {
+            meas_sine_voltage = AdcConvertChannelResult ();
+            meas_sine_state++;
+        }
+        break;
+
+    case MEAS_SINE_CALC_CONDUCTIVITY:
+        meas_sine_conductivity = Meas_Sine_Calc_Conductivity (
+                meas_sine_dac,
+                meas_sine_voltage);
+
+        *conductivity = meas_sine_conductivity;
+        new_convertion = 1;
+        // meas_sine_state++;
+        meas_sine_state = MEAS_SINE_WAIT_FOR_START;
+        break;
+
+    // case MEAS_SINE_SEND:
+    //     char buff [40];
+    //     sprintf(buff, "c %d\r\n", meas_sine_conductivity);
+    //     Usart1Send(buff);
+    //     meas_sine_state = MEAS_SINE_WAIT_FOR_START;
+    //     break;
+        
+    default:
+        meas_sine_state = MEAS_SINE_WAIT_FOR_START;
+        break;
+    }
+
+    return new_convertion;    
+}
+
+
+unsigned int Meas_Sine_Calc_Conductivity (unsigned short dac_value,
+                                          unsigned short adc_voltage)
+{
+    if (!dac_value)
+        return 0;
+
+    // dac_value over 3k3 is output current
+    // adc_voltage Rx multiplied by 0.0909 (1/11)
+    // calc is Rx
+    unsigned int calc = 0;
+
+    
+    calc = adc_voltage * MULTIPLIER_LOW * CURRENT_POWER_RESISTENCE;
+    calc = calc / dac_value;
+
+    if (calc > 65000)
+        calc = 65000;
+    
+    return  calc;
+}
 
 //--- end of file ---//

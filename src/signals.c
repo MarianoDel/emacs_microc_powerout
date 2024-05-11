@@ -11,6 +11,7 @@
 #include "signals.h"
 #include "signals_defs.h"
 #include "treatment.h"
+#include "meas.h"
 
 #include "hard.h"
 #include "tim.h"
@@ -109,8 +110,8 @@ void Signals_Get_High_Current (void);
 void Signals_Get_Low_Current (void);
 
 void Signals_Calc_Sinusoidal_Outputs (treatment_conf_t * pconf);
-void Signals_Set_Sinusoidal_High (treatment_conf_t * pconf, unsigned short value);
-void Signals_Set_Sinusoidal_Low (treatment_conf_t * pconf, unsigned short value);
+unsigned short Signals_Set_Sinusoidal_High (treatment_conf_t * pconf, unsigned short value);
+unsigned short Signals_Set_Sinusoidal_Low (treatment_conf_t * pconf, unsigned short value);
 unsigned short Signals_Calc_Sinusoidal_High (treatment_conf_t * pconf, unsigned short value);
 unsigned short Signals_Calc_Sinusoidal_Low (treatment_conf_t * pconf, unsigned short value);
 
@@ -224,6 +225,7 @@ resp_e Signals_Square (treatment_conf_t * pconf)
 const unsigned short * psine;
 signals_sine_states_e sine_state = SINE_INIT;
 signals_square_cut_e square_cut_state = SQUARE_NO_CUTTING;
+unsigned char meas_taken = 0;
 resp_e Signals_Sinusoidal (treatment_conf_t * pconf)
 {
     resp_e resp = resp_continue;
@@ -262,7 +264,8 @@ resp_e Signals_Sinusoidal (treatment_conf_t * pconf)
 
         // all updates done!
         Signals_Reset_Frequency_Intensity_Change_Flag ();
-            
+
+        meas_taken = 0;
         square_cut_state = SQUARE_NO_CUTTING;
         resp = resp_continue;
         sine_state++;
@@ -273,7 +276,17 @@ resp_e Signals_Sinusoidal (treatment_conf_t * pconf)
         {
             Timer_Sine_Signal_Reset();
             if (!Signal_Get_Sinusoidal_Cut())
-                Signals_Set_Sinusoidal_High (pconf, *psine);
+            {
+                unsigned short dac_value;
+                dac_value = Signals_Set_Sinusoidal_High (pconf, *psine);
+                // get a meas point on peak
+                if ((psine >= &sinusoidal_table[127]) &&
+                    (!meas_taken))
+                {
+                    meas_taken = 1;
+                    Meas_Sine (dac_value);                    
+                }
+            }
             else
             {
                 unsigned short dac_saved = 0;
@@ -286,6 +299,7 @@ resp_e Signals_Sinusoidal (treatment_conf_t * pconf)
             else
             {
                 psine = sinusoidal_table;
+                meas_taken = 0;
 
                 if (pconf->polarity == POLARITY_ALT)
                     Timer_Polarity_Always_Right();
@@ -300,7 +314,17 @@ resp_e Signals_Sinusoidal (treatment_conf_t * pconf)
         {
             Timer_Sine_Signal_Reset();
             if (!Signal_Get_Sinusoidal_Cut())
-                Signals_Set_Sinusoidal_Low (pconf, *psine);
+            {
+                unsigned short dac_value;
+                dac_value = Signals_Set_Sinusoidal_Low (pconf, *psine);
+                // get a meas point on peak
+                if ((psine >= &sinusoidal_table[127]) &&
+                    (!meas_taken))
+                {
+                    meas_taken = 1;
+                    Meas_Sine (dac_value);                    
+                }                
+            }
             else
             {
                 unsigned short dac_saved = 0;
@@ -313,6 +337,7 @@ resp_e Signals_Sinusoidal (treatment_conf_t * pconf)
             else
             {
                 psine = sinusoidal_table;
+                meas_taken = 0;                
 
                 if (pconf->polarity == POLARITY_ALT)
                     Timer_Polarity_Always_Left();
@@ -508,12 +533,14 @@ void Signals_Calc_Sinusoidal_Outputs (treatment_conf_t * pconf)
 }
 
 
-void Signals_Set_Sinusoidal_High (treatment_conf_t * pconf, unsigned short value)
+unsigned short Signals_Set_Sinusoidal_High (treatment_conf_t * pconf, unsigned short value)
 {
     unsigned short dac_value = 0;
 
     dac_value = Signals_Calc_Sinusoidal_High (pconf, value);
     DAC_Output1 (dac_value);
+
+    return dac_value;
 }
 
 
@@ -531,12 +558,14 @@ unsigned short Signals_Calc_Sinusoidal_High (treatment_conf_t * pconf, unsigned 
 }
 
 
-void Signals_Set_Sinusoidal_Low (treatment_conf_t * pconf, unsigned short value)
+unsigned short Signals_Set_Sinusoidal_Low (treatment_conf_t * pconf, unsigned short value)
 {
     unsigned short dac_value = 0;
 
     dac_value = Signals_Calc_Sinusoidal_Low (pconf, value);
     DAC_Output1 (dac_value);
+
+    return dac_value;
 }
 
 
