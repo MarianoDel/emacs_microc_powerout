@@ -31,7 +31,8 @@
 typedef enum {
     TREATMENT_INIT = 0,
     TREATMENT_STANDBY_NO_COMMS,
-    TREATMENT_STANDBY_WITH_COMMS,
+    TREATMENT_STANDBY_SQUARE_WITH_COMMS,
+    TREATMENT_STANDBY_SINE_WITH_COMMS,    
     TREATMENT_SQUARE_RUNNING,
     TREATMENT_SINE_RUNNING,
     TREATMENT_STOPPING
@@ -81,13 +82,20 @@ void Treatment_Manager (void)
 
             // for square negative meas
             if (treatment_conf.mode == MODE_SQUARE)
+            {
                 Timer_Polarity (POLARITY_NEG);
-            
-            treat_state++;
+                treat_state = TREATMENT_STANDBY_SQUARE_WITH_COMMS;
+            }
+            else
+            {
+                Timer_Polarity (POLARITY_POS);
+                DAC_Output2(0);
+                treat_state = TREATMENT_STANDBY_SINE_WITH_COMMS;
+            }
         }
         break;
         
-    case TREATMENT_STANDBY_WITH_COMMS:    // AND MEASUREMENTS
+    case TREATMENT_STANDBY_SQUARE_WITH_COMMS:    // AND MEASUREMENTS
         
         if (Treatment_Start_Flag ())
         {
@@ -127,13 +135,53 @@ void Treatment_Manager (void)
                 Usart1Send(buff);
             }
         }
-        // if (!Comms_Rpi_Answering())
-        // {
-        //     ChangeLed_With_Timer (LED_TREATMENT_STANDBY, 4000);
-        //     treat_state--;
-        // }
+
+        // check for change in mode
+        if (treatment_conf.mode == MODE_SINE)
+        {
+            Timer_Polarity (POLARITY_POS);
+            DAC_Output2(0);
+            treat_state = TREATMENT_STANDBY_SINE_WITH_COMMS;
+        }
         break;
 
+    case TREATMENT_STANDBY_SINE_WITH_COMMS:
+        
+        if (Treatment_Start_Flag ())
+        {
+            Treatment_Start_Flag_Reset ();
+
+            if (Probe_Get_Status () == CONN_STABLISH)
+                start_flag = 1;
+        }
+        
+        if (start_flag)
+        {
+
+            if (treatment_conf.mode == MODE_SQUARE)
+            {
+                Usart1Send("starting square\r\n");
+                Signals_Square_Reset ();
+                ChangeLed(LED_TREATMENT_SQUARE_RUNNING);
+                treat_state = TREATMENT_SQUARE_RUNNING;
+            }
+            else if (treatment_conf.mode == MODE_SINE)
+            {
+                Usart1Send("starting sinusoidal\r\n");
+                Signals_Sinusoidal_Reset ();
+                ChangeLed(LED_TREATMENT_SINE_RUNNING);                
+                treat_state = TREATMENT_SINE_RUNNING;
+            }            
+        }
+
+        // check for change in mode
+        if (treatment_conf.mode == MODE_SQUARE)
+        {
+            Timer_Polarity (POLARITY_NEG);
+            treat_state = TREATMENT_STANDBY_SQUARE_WITH_COMMS;
+        }
+        break;
+        
     case TREATMENT_SQUARE_RUNNING:
         Signals_Square (&treatment_conf);
 
@@ -173,10 +221,17 @@ void Treatment_Manager (void)
 
         // for square negative meas
         if (treatment_conf.mode == MODE_SQUARE)
+        {
             Timer_Polarity (POLARITY_NEG);
-
+            treat_state = TREATMENT_STANDBY_SQUARE_WITH_COMMS;
+        }
+        else
+        {
+            Timer_Polarity (POLARITY_POS);
+            DAC_Output2(0);
+            treat_state = TREATMENT_STANDBY_SINE_WITH_COMMS;
+        }
         ChangeLed(LED_TREATMENT_STANDBY);
-        treat_state = TREATMENT_STANDBY_WITH_COMMS;
         break;
 
     default:
