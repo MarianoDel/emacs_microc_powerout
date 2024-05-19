@@ -26,6 +26,8 @@ typedef struct {
 
 
 // Exported Module Functions ---------------------------------------------------
+void Signals_Timeouts (void);
+
 resp_e Signals_Square (treatment_conf_t * pconf);
 void Signals_Square_Reset (void);
 

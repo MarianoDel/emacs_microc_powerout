@@ -58,7 +58,8 @@ unsigned int Meas_Online_Calc_Resistance (unsigned short current_itov,
                                           unsigned short meas_hg,
                                           unsigned short meas_lg);
 unsigned int Meas_Sine_Calc_Conductivity (unsigned short dac_value,
-                                          unsigned short adc_voltage);
+                                          unsigned short adc_voltage,
+                                          unsigned short adc_voltage_hg);
 
 
 // Module Functions ------------------------------------------------------------
@@ -71,6 +72,12 @@ void Meas_Timeout (void)
 
 meas_state_e meas_state = SET_REFERENCE;
 unsigned char meas_cnt = 0;
+void Meas_Square_Reset (void)
+{
+    meas_state = SET_REFERENCE;
+}
+
+
 unsigned char Meas_Square (unsigned char * result)
 {
     unsigned char new_convertion = 0;
@@ -78,12 +85,12 @@ unsigned char Meas_Square (unsigned char * result)
     if (meas_timeout)
         return 0;
 
-    meas_timeout = 5;    // take meas every 5ms * (64 + 2) = 330ms
+    meas_timeout = 3;    // take meas every 5ms * (64 + 2) = 330ms
     
     switch (meas_state)
     {
     case SET_REFERENCE:
-        Meas_Set_Dac (30);
+        Meas_Set_Dac (5);
         meas_cnt = 0;
         meas_state++;
         break;
@@ -174,6 +181,8 @@ void Meas_Set_Dac (unsigned char dac_gain)
     calc = (dac_gain + 1) * 4095;
     calc = calc / 100;
 
+    calc = calc + 250;
+    
     if (calc > 4095)
         calc = 4095;
 
@@ -205,7 +214,7 @@ unsigned char Meas_Calc_Display_Value (unsigned short reference, unsigned short 
     // if (meas_value < OFFSET_MEAS)
     //     meas_value = 0;
 
-    // reference its the value for 100pts
+    // reference its the value for 100 in display
     int calc = meas * 100;
     calc = calc / reference;
     
@@ -217,60 +226,126 @@ unsigned char Meas_Calc_Display_Value (unsigned short reference, unsigned short 
 
 
 typedef enum {
-    MEAS_ONLINE_START_LG,
-    MEAS_ONLINE_WAIT_ADC_LG,
+    MEAS_ONLINE_WAIT_FOR_START,
+    MEAS_ONLINE_START,
+    MEAS_ONLINE_WAIT_ADC,
+    MEAS_ONLINE_START_WAIT_1,
+    MEAS_ONLINE_WAIT_ADC_WAIT_1,
+    MEAS_ONLINE_START_WAIT_2,
+    MEAS_ONLINE_WAIT_ADC_WAIT_2,
     MEAS_ONLINE_START_HG,
-    MEAS_ONLINE_WAIT_ADC_HG
+    MEAS_ONLINE_WAIT_ADC_HG,
+    MEAS_ONLINE_CALC_CONDUCTIVITY,
+    MEAS_ONLINE_SEND
     
 } meas_online_e;
     
-meas_online_e meas_online_state = MEAS_ONLINE_START_LG;
-unsigned short meas_low_gain = 0;
-unsigned short meas_high_gain = 0;
-unsigned char Meas_Online (unsigned short current_itov, unsigned int * result)
+meas_online_e meas_online_state = MEAS_ONLINE_WAIT_FOR_START;
+unsigned short meas_online_dac = 0;
+unsigned short meas_online_voltage = 0;
+unsigned short meas_online_voltage_hg = 0;
+void Meas_Online (unsigned short dac_value)
+{
+    if (meas_online_state != MEAS_ONLINE_WAIT_FOR_START)
+        return;
+
+    meas_online_dac = dac_value;
+    meas_online_state = MEAS_ONLINE_START;
+}
+
+
+unsigned char Meas_Online_Update (unsigned int * resistance)
 {
     unsigned char new_convertion = 0;
     
     switch (meas_online_state)
     {
-    case MEAS_ONLINE_START_LG:
+    case MEAS_ONLINE_WAIT_FOR_START:
+        break;
+
+    case MEAS_ONLINE_START:
         AdcConvertChannel (Sense_Power);
         meas_online_state++;
         break;
-
-    case MEAS_ONLINE_WAIT_ADC_LG:
+        
+    case MEAS_ONLINE_WAIT_ADC:
         if (AdcConvertSingleChannelFinishFlag ())
         {
-            meas_high_gain = AdcConvertChannelResult ();
+            meas_online_voltage = AdcConvertChannelResult ();
             meas_online_state++;
         }
         break;
 
+    case MEAS_ONLINE_START_WAIT_1:
+        AdcConvertChannel (Sense_Power);
+        meas_online_state++;
+        break;
+        
+    case MEAS_ONLINE_WAIT_ADC_WAIT_1:
+        if (AdcConvertSingleChannelFinishFlag ())
+        {
+            meas_online_voltage = AdcConvertChannelResult ();
+            meas_online_state++;
+        }
+        break;
+
+    case MEAS_ONLINE_START_WAIT_2:
+        AdcConvertChannel (Sense_Power);
+        meas_online_state++;
+        break;
+        
+    case MEAS_ONLINE_WAIT_ADC_WAIT_2:
+        if (AdcConvertSingleChannelFinishFlag ())
+        {
+            meas_online_voltage = AdcConvertChannelResult ();
+            meas_online_state++;
+        }
+        break;
+        
     case MEAS_ONLINE_START_HG:
         AdcConvertChannel (Sense_Meas);
         meas_online_state++;
         break;
-
+        
     case MEAS_ONLINE_WAIT_ADC_HG:
         if (AdcConvertSingleChannelFinishFlag ())
         {
-            meas_low_gain = AdcConvertChannelResult ();
-            *result = Meas_Online_Calc_Resistance (
-                current_itov,
-                meas_high_gain,
-                meas_low_gain);
-            
-            meas_online_state = MEAS_ONLINE_START_LG;
-            new_convertion = 1;
+            meas_online_voltage_hg = AdcConvertChannelResult ();
+            meas_online_state++;
         }
         break;
         
+    case MEAS_ONLINE_CALC_CONDUCTIVITY:
+        *resistance = Meas_Online_Calc_Resistance (
+                meas_online_dac,
+                meas_online_voltage_hg,
+                meas_online_voltage);
+
+        char buff [60];
+        sprintf(buff, "h: %d l: %d d: %d\r\n",
+                meas_online_voltage_hg,
+                meas_online_voltage,
+                meas_online_dac);
+        Usart1Send(buff);
+        
+        new_convertion = 1;
+        // meas_online_state++;
+        meas_online_state = MEAS_ONLINE_WAIT_FOR_START;
+        break;
+
+    // case MEAS_ONLINE_SEND:
+    //     char buff [40];
+    //     sprintf(buff, "c %d\r\n", meas_online_conductivity);
+    //     Usart1Send(buff);
+    //     meas_online_state = MEAS_ONLINE_WAIT_FOR_START;
+    //     break;
+        
     default:
-        meas_online_state = MEAS_ONLINE_START_LG;
+        meas_online_state = MEAS_ONLINE_WAIT_FOR_START;
         break;
     }
-    
-    return new_convertion;
+
+    return new_convertion;    
 }
 
 
@@ -290,14 +365,24 @@ unsigned int Meas_Online_Calc_Resistance (unsigned short current_itov,
     unsigned int calc = 0;
 
     
-    if (meas_hg < 4000)    // use high gain circuit for calcs
+    if (meas_hg < 4090)    // use high gain circuit for calcs
     {
-        calc = meas_hg * MULTIPLIER_HIGH * CURRENT_POWER_RESISTENCE;
+        // calc = meas_hg * MULTIPLIER_HIGH * CURRENT_POWER_RESISTENCE;
+        if (meas_hg > 1000)
+            calc = meas_hg * MULTIPLIER_HIGH * 5000;    // 2700 * 2
+        else
+            calc = meas_hg * MULTIPLIER_HIGH * 3300;    // 2700 * 1.5
+        
         calc = calc / current_itov;
     }
     else    // use low gain circuits
     {
-        calc = meas_lg * MULTIPLIER_LOW * CURRENT_POWER_RESISTENCE;
+        // calc = meas_lg * MULTIPLIER_LOW * CURRENT_POWER_RESISTENCE;
+        if (meas_lg > 1000)
+            calc = meas_lg * MULTIPLIER_LOW * 5000;    // 2700 * 2
+        else
+            calc = meas_lg * MULTIPLIER_LOW * 3300;    // 2700 * 1.5
+
         calc = calc / current_itov;        
     }
 
@@ -308,6 +393,8 @@ typedef enum {
     MEAS_SINE_WAIT_FOR_START,
     MEAS_SINE_START,
     MEAS_SINE_WAIT_ADC,
+    MEAS_SINE_START_HG,
+    MEAS_SINE_WAIT_ADC_HG,
     MEAS_SINE_CALC_CONDUCTIVITY,
     MEAS_SINE_SEND
     
@@ -316,6 +403,7 @@ typedef enum {
 meas_sine_e meas_sine_state = MEAS_SINE_WAIT_FOR_START;
 unsigned short meas_sine_dac = 0;
 unsigned short meas_sine_voltage = 0;
+unsigned short meas_sine_voltage_hg = 0;
 unsigned short meas_sine_conductivity = 0;
 void Meas_Sine (unsigned short dac_value)
 {
@@ -349,11 +437,32 @@ unsigned char Meas_Sine_Update (unsigned short * conductivity)
         }
         break;
 
+    case MEAS_SINE_START_HG:
+        AdcConvertChannel (Sense_Meas);
+        meas_sine_state++;
+        break;
+        
+    case MEAS_SINE_WAIT_ADC_HG:
+        if (AdcConvertSingleChannelFinishFlag ())
+        {
+            meas_sine_voltage_hg = AdcConvertChannelResult ();
+            meas_sine_state++;
+        }
+        break;
+        
     case MEAS_SINE_CALC_CONDUCTIVITY:
         meas_sine_conductivity = Meas_Sine_Calc_Conductivity (
                 meas_sine_dac,
-                meas_sine_voltage);
+                meas_sine_voltage,
+                meas_sine_voltage_hg);
 
+        // char buff [60];
+        // sprintf(buff, "h: %d l: %d d: %d\r\n",
+        //         meas_sine_voltage_hg,
+        //         meas_sine_voltage,
+        //         meas_sine_dac);
+        // Usart1Send(buff);
+        
         *conductivity = meas_sine_conductivity;
         new_convertion = 1;
         // meas_sine_state++;
@@ -377,7 +486,8 @@ unsigned char Meas_Sine_Update (unsigned short * conductivity)
 
 
 unsigned int Meas_Sine_Calc_Conductivity (unsigned short dac_value,
-                                          unsigned short adc_voltage)
+                                          unsigned short adc_voltage,
+                                          unsigned short adc_voltage_hg)
 {
     if (!dac_value)
         return 0;
@@ -387,9 +497,16 @@ unsigned int Meas_Sine_Calc_Conductivity (unsigned short dac_value,
     // calc is Rx
     unsigned int calc = 0;
 
-    
-    calc = adc_voltage * MULTIPLIER_LOW * CURRENT_POWER_RESISTENCE;
-    calc = calc / dac_value;
+    if (adc_voltage_hg < 4000)    // use high gain circuit for calcs
+    {
+        calc = adc_voltage_hg * MULTIPLIER_HIGH * CURRENT_POWER_RESISTENCE;
+        calc = calc / dac_value;
+    }
+    else    // use low gain circuits
+    {
+        calc = adc_voltage * MULTIPLIER_LOW * CURRENT_POWER_RESISTENCE;
+        calc = calc / dac_value;
+    }
 
     if (calc > 65000)
         calc = 65000;

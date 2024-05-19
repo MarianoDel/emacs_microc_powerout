@@ -14,6 +14,7 @@
 #include "hard.h"
 #include "usart.h"
 #include "tim.h"
+#include "dac.h"
 
 #include "signals.h"
 #include "utils.h"
@@ -65,7 +66,8 @@ void Treatment_Manager (void)
 {
     unsigned char start_flag = 0;
     unsigned char meas_to_report = 0;
-    unsigned short cond_to_report = 0;    
+    unsigned short cond_to_report = 0;
+    unsigned int res_int = 0;
     
     switch (treat_state)
     {
@@ -191,6 +193,14 @@ void Treatment_Manager (void)
             treat_state = TREATMENT_STOPPING;
         }
 
+        if (Meas_Online_Update (&res_int))
+        {
+            // new meas filtered value, report it
+            char buff [40];
+            sprintf(buff, "resistance %d\r\n", res_int);
+            Usart1Send(buff);
+        }
+        
         // go out if not comms?
         break;
         
@@ -207,7 +217,7 @@ void Treatment_Manager (void)
         {
             // new meas filtered value, report it
             char buff [40];
-            sprintf(buff, "c %d\r\n", cond_to_report);
+            sprintf(buff, "resistance %d\r\n", cond_to_report);
             Usart1Send(buff);
         }
         
@@ -223,6 +233,7 @@ void Treatment_Manager (void)
         if (treatment_conf.mode == MODE_SQUARE)
         {
             Timer_Polarity (POLARITY_NEG);
+            Meas_Square_Reset();
             treat_state = TREATMENT_STANDBY_SQUARE_WITH_COMMS;
         }
         else

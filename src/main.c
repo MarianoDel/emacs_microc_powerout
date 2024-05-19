@@ -25,6 +25,7 @@
 #include "treatment.h"
 #include "comms_probe.h"
 #include "meas.h"
+#include "signals.h"
 
 
 #include <stdio.h>
@@ -178,6 +179,8 @@ void TimingDelay_Decrement(void)
     // Treatment_Timeouts ();
     
     HARD_Timeouts();
+
+    Signals_Timeouts ();
     
 }
 

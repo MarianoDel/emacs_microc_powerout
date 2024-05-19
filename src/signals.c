@@ -102,6 +102,9 @@ const unsigned short sinusoidal_table [] = {12,25,37,50,62,75,87,100,112,125,
 
 
 const unsigned short dac_offset = 350;
+volatile unsigned short signals_timeout = 0;
+
+
 // Module Private Functions ----------------------------------------------------
 unsigned short Signals_Current_to_VoltagePts (unsigned short current_ua);
 void Signals_Calc_Square_Outputs (treatment_conf_t * pconf);
@@ -124,7 +127,16 @@ void Signal_Set_Sinusoidal_Cut_Last (unsigned short last_value);
 // void Signals_Set_Frequency_Intensity_Change_Flag (void);
 void Signals_Reset_Frequency_Intensity_Change_Flag (void);
 unsigned char Signals_Get_Frequency_Intensity_Change_Flag (void);
+
+
 // Module Functions ------------------------------------------------------------
+void Signals_Timeouts (void)
+{
+    if (signals_timeout)
+        signals_timeout--;
+}
+
+
 signals_square_states_e square_state = SQUARE_INIT;
 void Signals_Square_Reset (void)
 {
@@ -187,7 +199,14 @@ resp_e Signals_Square (treatment_conf_t * pconf)
             Timer_Square_Signal_Reset();
             Signals_Get_High_Current ();
             square_state++;
-        }        
+        }
+
+        // get meas every second on high edge
+        if (!signals_timeout)
+        {
+            signals_timeout = 1000;
+            Meas_Online (pconf->itov_high);
+        }
         break;
 
     case SQUARE_SECOND_EDGE:
@@ -438,14 +457,24 @@ resp_e Signals_Timers_Calculation (timers_data_st * td)
 
 unsigned short Signals_Current_to_VoltagePts (unsigned short current_ua)
 {
-    int calc = 0;
+    unsigned int calc = 0;
 
+    // FOR 3.3K POWER GEN
     // current on 3k3 resistor to voltage on 3.3V
     // ex. 25uA * 3300 * 4095 / 3.3V = 102pts
     // algo 25 * 4095 / 1000 = 102pts
-    calc = current_ua * 4095;
-    calc = calc / 1000;
+    // calc = current_ua * 4095;
+    // calc = calc / 1000;
 
+    // FOR 2.7K POWER GEN
+    // current on 2k7 resistor to voltage on 3.3V
+    // ex. 25uA * 2700 * 4095 / 3.3V = 83pts
+    // algo 25 * 819 * 4095 / 1000000 = 83pts
+    calc = current_ua * 819;
+    calc = calc / 10;
+    calc = calc * 4095;
+    calc = calc / 100000;
+    
     return (unsigned short) calc;
 }
 
@@ -453,13 +482,24 @@ unsigned short Signals_Current_to_VoltagePts (unsigned short current_ua)
 void Signals_Calc_Square_Outputs (treatment_conf_t * pconf)
 {
     int calc = 0;
-
-    // limits checks
+    unsigned short bottom = 0;
+    unsigned short top = 0;
 
     calc = Signals_Current_to_VoltagePts (pconf->intensity);
     
-    unsigned short bottom = calc >> 1;
-    unsigned short top = calc + bottom;
+    // current <= 100, bottom half top the selected current
+    if (pconf->intensity <= 100)
+    {
+        bottom = calc >> 1;
+        top = calc + bottom;
+    }
+    else
+    {
+        // bottom in 100uA top double of selected current
+        // ex. 600uA bottom 100uA; top = (600 - 100) * 2 + 100
+        bottom = Signals_Current_to_VoltagePts (100);
+        top = (calc - bottom) * 2 + bottom;
+    }
     
     if (top > 4095)
         top = 4095;
@@ -471,13 +511,25 @@ void Signals_Calc_Square_Outputs (treatment_conf_t * pconf)
 
 void Signals_Set_Rising_Ouput (treatment_conf_t * pconf)
 {
-    DAC_Output1(pconf->itov_high);
+    unsigned short to_dac;
+    to_dac = pconf->itov_high + dac_offset + 90;
+
+    if (to_dac > 4095)
+        to_dac = 4095;
+    
+    DAC_Output1(to_dac);
 }
 
 
 void Signals_Set_Falling_Ouput (treatment_conf_t * pconf)
 {
-    DAC_Output1(pconf->itov_low);
+    unsigned short to_dac;
+    to_dac = pconf->itov_low + dac_offset + 90;
+
+    if (to_dac > 4095)
+        to_dac = 4095;
+    
+    DAC_Output1(to_dac);
 }
 
 

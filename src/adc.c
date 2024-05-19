@@ -103,8 +103,8 @@ void AdcConfig (void)
     ADC1->CR2 |= ADC_CR2_EXTTRIG;    // with external trigger (can be soft trigger)    
     
     //set sampling time for each channel
-    AdcSetChannelSampleTime(ADC_Channel_0, ADC_SampleTime_41_5Cycles);
-    AdcSetChannelSampleTime(ADC_Channel_1, ADC_SampleTime_41_5Cycles);
+    AdcSetChannelSampleTime(ADC_Channel_0, ADC_SampleTime_239_5Cycles);
+    AdcSetChannelSampleTime(ADC_Channel_1, ADC_SampleTime_239_5Cycles);
     AdcSetChannelSampleTime(ADC_Channel_2, ADC_SampleTime_41_5Cycles);
     AdcSetChannelSampleTime(ADC_Channel_3, ADC_SampleTime_41_5Cycles);    
     AdcSetChannelSampleTime(ADC_Channel_6, ADC_SampleTime_41_5Cycles);
