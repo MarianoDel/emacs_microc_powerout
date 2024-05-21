@@ -45,6 +45,7 @@ volatile unsigned short meas_timeout = 0;
 ma32_u16_data_obj_t ref_filter;
 ma32_u16_data_obj_t meas_filter;
 ma32_u16_data_obj_t display_filter;
+ma8_u16_data_obj_t display_v2_filter;
 unsigned short ref_filtered = 0;
 unsigned short meas_filtered = 0;
 unsigned char dac_gain_saved = 0;
@@ -54,6 +55,7 @@ unsigned char dac_gain_saved = 0;
 // Module Private Functions ----------------------------------------------------
 unsigned char Meas_Calc_Display_Value (unsigned short reference, unsigned short meas);
 void Meas_Set_Dac (unsigned char dac_gain);
+void Meas_Set_Dac_V2 (unsigned short dac_value);
 unsigned int Meas_Online_Calc_Resistance (unsigned short current_itov,
                                           unsigned short meas_hg,
                                           unsigned short meas_lg);
@@ -61,6 +63,7 @@ unsigned int Meas_Sine_Calc_Conductivity (unsigned short dac_value,
                                           unsigned short adc_voltage,
                                           unsigned short adc_voltage_hg);
 
+unsigned char Meas_Calc_Display_Value_V2 (unsigned char gain, unsigned short meas);
 
 // Module Functions ------------------------------------------------------------
 void Meas_Timeout (void)
@@ -75,6 +78,67 @@ unsigned char meas_cnt = 0;
 void Meas_Square_Reset (void)
 {
     meas_state = SET_REFERENCE;
+}
+
+
+unsigned char Meas_Square_V2 (unsigned char * result)
+{
+    unsigned char new_convertion = 0;
+    
+    if (meas_timeout)
+        return 0;
+
+    meas_timeout = 5;    // take meas every 5ms * (64 + 2) = 330ms
+    
+    switch (meas_state)
+    {
+    case SET_REFERENCE:
+        Meas_Set_Dac_V2 (310);    // reference for meas in 2uA 144mV on Rmeas
+        meas_cnt = 0;
+        meas_state = START_MEAS_CONVERTION;
+        break;
+
+    case START_MEAS_CONVERTION:
+        AdcConvertChannel (Sense_Meas);
+        meas_state = WAIT_MEAS_CONVERTION;
+        break;
+
+    case WAIT_MEAS_CONVERTION:
+        if (AdcConvertSingleChannelFinishFlag ())
+        {
+            unsigned short new_meas = 0;
+            new_meas = AdcConvertChannelResult ();
+            meas_filtered = MA32_U16Circular (&meas_filter, new_meas);
+            meas_state = START_MEAS_CONVERTION;
+
+            // report in 32 meas
+            if (meas_cnt < (32 - 1))
+                meas_cnt++;
+            else
+            {
+                unsigned short display_raw = 0;
+                meas_cnt = 0;
+                display_raw = Meas_Calc_Display_Value_V2 (dac_gain_saved, meas_filtered);
+                *result = MA8_U16Circular(&display_v2_filter, display_raw);
+                new_convertion = 1;
+
+                // debug send meas
+                // char buff [60];
+                // sprintf(buff, "gain: %d meas: %d res: %d\r\n",
+                //         dac_gain_saved,
+                //         meas_filtered,
+                //         *result);
+                // Usart1Send(buff);
+            }
+        }
+        break;
+        
+    default:
+        meas_state = SET_REFERENCE;
+        break;
+    }
+    
+    return new_convertion;
 }
 
 
@@ -149,6 +213,13 @@ unsigned char Meas_Square (unsigned char * result)
                 disp_to_filter = Meas_Calc_Display_Value (ref_filtered, meas_filtered);
                 *result = MA32_U16Circular(&display_filter, disp_to_filter);
                 new_convertion = 1;
+
+                // debug send meas
+                // char buff [60];
+                // sprintf(buff, "ref: %d meas: %d\r\n",
+                //         ref_filtered,
+                //         meas_filtered);
+                // Usart1Send(buff);
             }
         }
         break;
@@ -190,6 +261,15 @@ void Meas_Set_Dac (unsigned char dac_gain)
 }
 
 
+void Meas_Set_Dac_V2 (unsigned short dac_value)
+{
+    if (dac_value > 4095)
+        dac_value = 4095;
+
+    DAC_Output2(dac_value);
+}
+
+
 void Meas_Square_Init (void)
 {
     // init ADC for meas square
@@ -202,11 +282,35 @@ void Meas_Square_Init (void)
     MA32_U16Circular_Reset (&ref_filter);
     MA32_U16Circular_Reset (&meas_filter);
     MA32_U16Circular_Reset (&display_filter);
+    MA8_U16Circular_Reset (&display_v2_filter);
     
 }
 
 
 #define OFFSET_MEAS    0
+unsigned char Meas_Calc_Display_Value_V2 (unsigned char gain, unsigned short meas)
+{
+    const unsigned short gain_floor = 39;    // 0.032mV on opamp
+    const unsigned short gain_step = 13;    // 0.0105mV on opamp
+
+    unsigned short gain_ref = gain_floor + gain * gain_step;
+    
+    if (meas > gain_ref)
+    {
+        return 0;
+    }
+    else
+    {
+        gain_ref -= meas;
+    }
+
+    if (gain_ref > 100)
+        gain_ref = 100;
+    
+    return (unsigned char) gain_ref;
+}
+
+
 unsigned char Meas_Calc_Display_Value (unsigned short reference, unsigned short meas)
 {
     if (!reference)
@@ -244,6 +348,12 @@ meas_online_e meas_online_state = MEAS_ONLINE_WAIT_FOR_START;
 unsigned short meas_online_dac = 0;
 unsigned short meas_online_voltage = 0;
 unsigned short meas_online_voltage_hg = 0;
+void Meas_Online_Reset (void)
+{
+    meas_online_state = MEAS_ONLINE_WAIT_FOR_START;
+}
+
+
 void Meas_Online (unsigned short dac_value)
 {
     if (meas_online_state != MEAS_ONLINE_WAIT_FOR_START)
@@ -321,12 +431,12 @@ unsigned char Meas_Online_Update (unsigned int * resistance)
                 meas_online_voltage_hg,
                 meas_online_voltage);
 
-        char buff [60];
-        sprintf(buff, "h: %d l: %d d: %d\r\n",
-                meas_online_voltage_hg,
-                meas_online_voltage,
-                meas_online_dac);
-        Usart1Send(buff);
+        // char buff [60];
+        // sprintf(buff, "h: %d l: %d d: %d\r\n",
+        //         meas_online_voltage_hg,
+        //         meas_online_voltage,
+        //         meas_online_dac);
+        // Usart1Send(buff);
         
         new_convertion = 1;
         // meas_online_state++;
@@ -405,6 +515,12 @@ unsigned short meas_sine_dac = 0;
 unsigned short meas_sine_voltage = 0;
 unsigned short meas_sine_voltage_hg = 0;
 unsigned short meas_sine_conductivity = 0;
+void Meas_Sine_Reset (void)
+{
+    meas_sine_state = MEAS_SINE_WAIT_FOR_START;
+}
+
+
 void Meas_Sine (unsigned short dac_value)
 {
     if (meas_sine_state != MEAS_SINE_WAIT_FOR_START)

@@ -86,6 +86,7 @@ void Treatment_Manager (void)
             if (treatment_conf.mode == MODE_SQUARE)
             {
                 Timer_Polarity (POLARITY_NEG);
+                Meas_Square_Reset();
                 treat_state = TREATMENT_STANDBY_SQUARE_WITH_COMMS;
             }
             else
@@ -116,6 +117,7 @@ void Treatment_Manager (void)
                 Signals_Square_Reset ();
                 ChangeLed(LED_TREATMENT_SQUARE_RUNNING);
                 treat_state = TREATMENT_SQUARE_RUNNING;
+                Meas_Online_Reset();
             }
             else if (treatment_conf.mode == MODE_SINE)
             {
@@ -123,18 +125,25 @@ void Treatment_Manager (void)
                 Signals_Sinusoidal_Reset ();
                 ChangeLed(LED_TREATMENT_SINE_RUNNING);                
                 treat_state = TREATMENT_SINE_RUNNING;
+                Meas_Sine_Reset();
             }            
         }
 
         // get meas and report every 400ms
         if (treatment_conf.mode == MODE_SQUARE)
         {
-            if (Meas_Square (&meas_to_report))
+            // if (Meas_Square (&meas_to_report))
+            // {
+            //     // new meas filtered value, report it
+            //     char buff [40];
+            //     sprintf(buff, "display %d\r\n", meas_to_report);
+            //     Usart1Send(buff);
+            // }
+            if (Meas_Square_V2(&meas_to_report))
             {
-                // new meas filtered value, report it
                 char buff [40];
                 sprintf(buff, "display %d\r\n", meas_to_report);
-                Usart1Send(buff);
+                Usart1Send(buff);                
             }
         }
 
@@ -180,6 +189,7 @@ void Treatment_Manager (void)
         if (treatment_conf.mode == MODE_SQUARE)
         {
             Timer_Polarity (POLARITY_NEG);
+            Meas_Square_Reset();
             treat_state = TREATMENT_STANDBY_SQUARE_WITH_COMMS;
         }
         break;
@@ -459,7 +469,7 @@ resp_e Treatment_SetGain (unsigned short gain)
     if (gain <= 100)
     {
         treatment_conf.gain = gain;
-        Meas_Square_Set_Dac_Gain(gain);        
+        Meas_Square_Set_Dac_Gain(gain);
         resp = resp_ok;
     }
 
