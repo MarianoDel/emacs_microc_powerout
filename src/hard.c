@@ -165,6 +165,13 @@ void Hard_GetVoltages (char * buff)
     ADC_START;
     Wait_ms(1);
 
+#ifdef HARDWARE_VERSION_2_0    
+    sprintf(buff, "%d %d\n",
+            SENSE_POWER,
+            SENSE_MEAS);
+#endif
+
+#ifdef HARDWARE_VERSION_1_0    
     sprintf(buff, "%d %d %d %d %d %d\n",
             SENSE_POWER,
             SENSE_MEAS,
@@ -172,7 +179,8 @@ void Hard_GetVoltages (char * buff)
             V_SENSE_25V,
             V_SENSE_11V,
             V_SENSE_8V);
-
+#endif
+    
 }
 
 
@@ -184,6 +192,33 @@ void Hard_GetVoltages_Complete (void)
     ADC_START;
     Wait_ms(1);
 
+#ifdef HARDWARE_VERSION_2_0    
+    sprintf(buff, "%d %d\n",
+            SENSE_POWER,
+            SENSE_MEAS);
+
+    Usart1Send (buff);
+
+    // SENSE_POWER resistor multiplier 11
+    calc_int = SENSE_POWER * 330 * 11;
+    calc_int >>= 12;
+    calc_dec = calc_int;
+    calc_int = calc_int / 100;
+    calc_dec = calc_dec - calc_int * 100;
+    sprintf(buff, "Power: %d.%02dV, ", calc_int, calc_dec);
+    Usart1Send (buff);
+
+    // SENSE_MEAS resistor multiplier 2
+    calc_int = SENSE_MEAS * 330 * 2;
+    calc_int >>= 12;
+    calc_dec = calc_int;
+    calc_int = calc_int / 100;
+    calc_dec = calc_dec - calc_int * 100;
+    sprintf(buff, "Meas: %d.%02dV, ", calc_int, calc_dec);
+    Usart1Send (buff);
+#endif
+
+#ifdef HARDWARE_VERSION_1_0    
     sprintf(buff, "%d %d %d %d %d %d\n",
             SENSE_POWER,
             SENSE_MEAS,
@@ -247,8 +282,8 @@ void Hard_GetVoltages_Complete (void)
     calc_dec = calc_dec - calc_int * 100;
     sprintf(buff, "V8: %d.%02dV\n", calc_int, calc_dec);
     Usart1Send (buff);
+#endif
     
 }
-
 
 //--- end of file ---//

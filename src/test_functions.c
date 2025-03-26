@@ -201,7 +201,8 @@ void TF_Adc_Usart1_Tx (void)
     {
         for (int i = 0; i < ADC_CHANNEL_QUANTITY; i++)
             adc_ch[i] = 0;
-        
+
+#ifdef HARDWARE_VERSION_1_0	
         Wait_ms(1000);
         Usart1Send("starting conversion with channels in:\n");
         sprintf(buff, "%d %d %d %d %d %d\n",
@@ -230,7 +231,8 @@ void TF_Adc_Usart1_Tx (void)
                 V_SENSE_8V);
         
         Usart1Send (buff);
-        
+#endif
+	
     }
     //--- End Test ADC Multiple conversion Scanning Continuous Mode and DMA ----------------//        
 }
@@ -256,7 +258,47 @@ void TF_Adc_Usart1_Voltages (void)
     {
         for (int i = 0; i < ADC_CHANNEL_QUANTITY; i++)
             adc_ch[i] = 0;
+
+#ifdef HARDWARE_VERSION_2_0	
+        Wait_ms(1000);
+        Usart1Send("starting conversion with channels in:\n");
+        sprintf(buff, "%d %d\n",
+                SENSE_POWER,
+                SENSE_MEAS);
         
+        Usart1Send (buff);
+
+        LED_ON;
+        ADC_START;
+        Wait_ms(100);
+        LED_OFF;
+        
+        Wait_ms(900);
+        Usart1Send("conversion ended:\n");
+        sprintf(buff, "%d %d\n",
+                SENSE_POWER,
+                SENSE_MEAS);
+
+        // SENSE_POWER resistor multiplier 11
+        calc_int = SENSE_POWER * 330 * 11;
+        calc_int >>= 12;
+        calc_dec = calc_int;
+        calc_int = calc_int / 100;
+        calc_dec = calc_dec - calc_int * 100;
+        sprintf(buff, "Power: %d.%02d, ", calc_int, calc_dec);
+        Usart1Send (buff);
+
+        // SENSE_MEAS resistor multiplier 2
+        calc_int = SENSE_MEAS * 330 * 2;
+        calc_int >>= 12;
+        calc_dec = calc_int;
+        calc_int = calc_int / 100;
+        calc_dec = calc_dec - calc_int * 100;
+        sprintf(buff, "Meas: %d.%02d, ", calc_int, calc_dec);
+        Usart1Send (buff);
+#endif
+	
+#ifdef HARDWARE_VERSION_1_0
         Wait_ms(1000);
         Usart1Send("starting conversion with channels in:\n");
         sprintf(buff, "%d %d %d %d %d %d\n",
@@ -337,6 +379,7 @@ void TF_Adc_Usart1_Voltages (void)
         calc_dec = calc_dec - calc_int * 100;
         sprintf(buff, "V8V: %d.%02d\n", calc_int, calc_dec);
         Usart1Send (buff);
+#endif
                 
     }
     //--- End Test ADC Multiple conversion Scanning Continuous Mode and DMA ----------------//        

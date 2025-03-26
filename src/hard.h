@@ -16,7 +16,8 @@
 
 //----- Board Configuration -------------------//
 //--- Hardware ------------------//
-#define HARDWARE_VERSION_1_0    // first prototype
+#define HARDWARE_VERSION_2_0    // ch1 included in main brd ver 2.0
+// #define HARDWARE_VERSION_1_0    // first prototype
 
 
 //--- Software ------------------//
@@ -33,8 +34,6 @@
 
 
 //-------- Type of Program and Features ----------------
-// #define USE_NO_TREATMENT_DETECT    //cuando esta en tratamiento revisa si las potencias tambien
-// #define USE_BUZZER_ON_START
 
 
 //-------- Kind of Reports Sended ----------------
@@ -71,6 +70,9 @@
 
 
 //--- Hardware & Software Messages ------------------//
+#ifdef HARDWARE_VERSION_2_0
+#define HARD "Hardware Version: 2.0"
+#endif
 #ifdef HARDWARE_VERSION_1_0
 #define HARD "Hardware Version: 1.0"
 #endif
@@ -82,6 +84,91 @@
 
 
 // Exported Types --------------------------------------------------------------
+#ifdef HARDWARE_VERSION_2_0
+
+// PA defines ----
+// PA0 Analog Channel 0 (SENSE_POWER)
+// PA1 Analog Channel 1 (SENSE_MEAS)
+// PA2 NC
+// PA3 NC
+
+// PA4 Analog DAC Output (REF_POWER)
+// PA5 Analog DAC Output (REF_MEAS)
+
+// PA6 NC
+// PA7 NC
+
+// PA8 NC
+
+// PA9 PA10 Alternative Usart1 Tx Rx
+
+// PA11 PA12 PA13 PA14 PA15 NC
+
+// PB defines ----
+// PB0 Out or Alternative TIM8_CH2N
+#define RIGHT    ((GPIOB->ODR & 0x0001) != 0)
+#define RIGHT_ON    (GPIOB->BSRR = 0x00000001)
+#define RIGHT_OFF    (GPIOB->BSRR = 0x00010000)
+#define RIGHT_CH1    RIGHT
+#define RIGHT_CH1_ON    RIGHT_ON
+#define RIGHT_CH1_OFF    RIGHT_OFF
+
+// PB1 Out or Alternative TIM8_CH3N
+#define RIGHT_PLATE    ((GPIOB->ODR & 0x0002) != 0)
+#define RIGHT_PLATE_ON    (GPIOB->BSRR = 0x00000002)
+#define RIGHT_PLATE_OFF    (GPIOB->BSRR = 0x00020000)
+
+// PB2 PB3 PB4 PB5 PB6 PB7 NC
+
+// PB9 PB10 NC
+
+// PB10 PB11 Alternative Usart3 Tx Rx
+
+// PB12 NC
+
+// PB13 Input (SYNC_IN)
+#define SYNC_IN    ((GPIOB->IDR & 0x2000) != 0)
+
+// PB14 PB15 NC
+
+// PC defines ----
+// PC0 
+#define LED    ((GPIOC->ODR & 0x0001) != 0)
+#define LED_ON    (GPIOC->BSRR = 0x00000001)
+#define LED_OFF    (GPIOC->BSRR = 0x00010000)
+#define LED_CH1    LED
+#define LED_CH1_ON    LED_ON
+#define LED_CH1_OFF    LED_OFF
+
+// PC1 PC2 PC3 NC
+
+// PC4 Analog Channel 14 (NTC_10K)
+
+// PC6 NC
+
+// PC7 Out or Alternative TIM8_CH2
+#define LEFT    ((GPIOC->ODR & 0x0080) != 0)
+#define LEFT_ON    (GPIOC->BSRR = 0x00000080)
+#define LEFT_OFF    (GPIOC->BSRR = 0x00800000)
+#define LEFT_CH1    LEFT
+#define LEFT_CH1_ON    LEFT_ON
+#define LEFT_CH1_OFF    LEFT_OFF
+
+// PC8 Out or Alternative TIM8_CH3
+#define LEFT_PLATE    ((GPIOC->ODR & 0x0100) != 0)
+#define LEFT_PLATE_ON    (GPIOC->BSRR = 0x00000100)
+#define LEFT_PLATE_OFF    (GPIOC->BSRR = 0x01000000)
+
+// PC9 PC10 PC11 PC12 NC
+
+// PC13 PC14 PC15 NC
+
+// PD defines ----
+// PD0 PD1 PD2 NC
+
+#endif //HARDWARE_VERSION_2_0
+
+
 #ifdef HARDWARE_VERSION_1_0
 
 // PA defines ----

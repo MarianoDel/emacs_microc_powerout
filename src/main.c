@@ -70,7 +70,7 @@ int main (void)
         SysTickError();
 
     // Hardware Tests
-    // TF_Hardware_Tests ();
+    TF_Hardware_Tests ();
 
     // --- main program inits. ---
     //-- DMA configuration.

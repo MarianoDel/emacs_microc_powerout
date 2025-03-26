@@ -11,6 +11,9 @@
 #define _ADC_H_
 
 //----------- Defines For Configuration --------------//
+#include "hard.h"    // for hard configs
+#include <stdint.h>
+
 //----------- Some ADC Configurations ----------------//
 // #define ADC_WITH_INT
 // #define USE_ADC_SAMPLE_BY_SAMPLE
@@ -24,6 +27,14 @@
 #define SIZEOF_BOARD_TEMP		8
 #endif
 
+#ifdef HARDWARE_VERSION_2_0
+#define SENSE_POWER    adc_ch[0]
+#define SENSE_MEAS    adc_ch[1]
+#define ADC_CHANNEL_QUANTITY    2
+#define ADC_LAST_CHANNEL_QUANTITY    (ADC_CHANNEL_QUANTITY - 1)
+#endif
+
+#ifdef HARDWARE_VERSION_1_0
 #define SENSE_POWER    adc_ch[0]
 #define SENSE_MEAS    adc_ch[1]
 #define V_SENSE_25V    adc_ch[2]
@@ -32,6 +43,7 @@
 #define V_SENSE_28V    adc_ch[5]
 #define ADC_CHANNEL_QUANTITY    6
 #define ADC_LAST_CHANNEL_QUANTITY    (ADC_CHANNEL_QUANTITY - 1)
+#endif
 //----------- End of ADC Configurations --------------//
 
 
