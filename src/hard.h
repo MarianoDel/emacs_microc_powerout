@@ -254,6 +254,8 @@ void ChangeLed_With_Timer (unsigned char how_many, unsigned short led_timer_off)
 void UpdateLed (void);
 void HARD_Timeouts (void);
 
+unsigned char Sync_Input_Is_On (void);
+
 unsigned char Led_Is_On (void);
 void Led_On (void);
 void Led_Off (void);

@@ -26,6 +26,9 @@ void Timer_Sine_Signal_Reset (void);
 // void Timer_Sine_Signal_Set (void);
 void Timer_Sine_Signal_Stop (void);
 
+void Timer_Output_Polarity (output_polarity_e new_polarity);
+
+// dummy for signals
 void Timer_Polarity (polarity_e new_polarity);
 void Timer_Polarity_Always_Right (void);
 void Timer_Polarity_Always_Left (void);

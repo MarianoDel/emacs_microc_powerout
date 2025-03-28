@@ -100,14 +100,14 @@ void GpioInit (void)
     //--- GPIOA Low Side ------------------//
     // PA0 Analog Channel 0 (SENSE_POWER)
     // PA1 Analog Channel 1 (SENSE_MEAS)
-    // PA2 Analog Channel 2 (V_SENSE_28V)
-    // PA3 Analog Channel 3 (V_SENSE_25V)
-    // PA4 Analog DAC Output (REF_POWER)
-    // PA5 Analog DAC Output (REF_MEAS)
-    // PA6 Analog Channel 6 (V_SENSE_11V)
-    // PA7 Analog Channel 7 (V_SENSE_8V)
+    // PA2 NC
+    // PA3 NC
+    // PA4 Analog DAC Output (REF_POWER_CH1)
+    // PA5 Analog DAC Output (REF_MEAS_CH1)
+    // PA6 NC
+    // PA7 NC
     temp = GPIOA->CRL;
-    temp &= 0x00000000;
+    temp &= 0xFF00FF00;
     temp |= 0x00000000;
     GPIOA->CRL = temp;
 
@@ -132,49 +132,55 @@ void GpioInit (void)
     GPIOA->ODR = temp;
 
     //--- GPIOB Low Side -------------------//
-    //PB0 alternative TIM8_CH2N
-    //PB1 NC
+    //PB0 RIGHT_CH1 or alternative TIM8_CH2N
+    //PB1 RIGHT_PLATE_CH1 or alternative TIM8_CH3N
     //PB2 NC
-    //PB3 NC jtag
-    //PB4 NC jtag
+    //PB3 NC jtag on C8
+    //PB4 NC jtag on C8
     //PB5 NC
     //PB6 NC
     //PB7 NC
     temp = GPIOB->CRL;
-    temp &= 0xFFFFFFF0;
-    temp |= 0x0000000A;
+    temp &= 0xFFFFFF00;
+    temp |= 0x00000022;
     GPIOB->CRL = temp;
 
     //--- GPIOB High Side -------------------//
-    //PB8 alternative TIM4_CH3
+    //PB8 NC
     //PB9 NC
     //PB10 alternative Tx Usart3
     //PB11 alternative Rx Usart3
     //PB12 NC
-    //PB13 PROT_CH2 input
-    //PB14 check tamper_funcs module
-    //PB15 PROT_CH1 input
+    //PB13 SYNC_IN_CH1 input pullup
+    //PB14 NC
+    //PB15 NC
     temp = GPIOB->CRH;
-    temp &= 0x0F0F00F0;
-    temp |= 0x40408B0A;
+    temp &= 0xFF0F00FF;
+    temp |= 0x00808B00;
     GPIOB->CRH = temp;    
+
+    //--- GPIOB Pull-Up Pull-Dwn ------------------//
+    temp = GPIOB->ODR;    //PB13 pull-up
+    temp &= 0xDFFF;
+    temp |= 0x2000;
+    GPIOB->ODR = temp;
     
     //--- GPIOC Low Side -------------------//
-    //PC0 LED1
-    //PC1 LED2
+    //PC0 LED1_CH1
+    //PC1 NC
     //PC2 NC
     //PC3 NC
-    //PC4 Sense 200V ADC Channel 14
-    //PC5 Sense 15V ADC Channel 15
+    //PC4 NC
+    //PC5 NC
     //PC6 NC
-    //PC7 alternative TIM8_CH2
+    //PC7 LEFT_CH1 or alternative TIM8_CH2
     temp = GPIOC->CRL;
-    temp &= 0x0F00FF00;
-    temp |= 0xA0000022;
+    temp &= 0x0FFFFFF0;
+    temp |= 0x20000002;
     GPIOC->CRL = temp;
 
     //--- GPIOC High Side -------------------//
-    //PC8 NC
+    //PC8 LEFT_PLATE_CH1 or alternative TIM8_CH3
     //PC9 NC
     //PC10 NC
     //PC11 NC
@@ -183,22 +189,22 @@ void GpioInit (void)
     //PC14 NC    oscillator
     //PC15 NC    oscillator
     temp = GPIOC->CRH;   
-    temp &= 0xFFFFFFFF;
-    temp |= 0x00000000;
+    temp &= 0xFFFFFFF0;
+    temp |= 0x00000002;
     GPIOC->CRH = temp;
 
     //--- GPIOD Low Side -------------------//
     //PD0 NC
     //PD1 NC
-    //PD2 alternative Rx Uart5
+    //PD2 NC
     //PD3 No implemented
     //PD4 No implemented
     //PD5 No implemented
     //PD6 No implemented
     //PD7 No implemented    
     temp = GPIOD->CRL;   
-    temp &= 0xFFFFF0FF;    
-    temp |= 0x00000800;
+    temp &= 0xFFFFFFFF;    
+    temp |= 0x00000000;
     GPIOD->CRL = temp;
 
 #ifdef USE_EXTI_LINES

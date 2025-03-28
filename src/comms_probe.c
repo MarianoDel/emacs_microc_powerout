@@ -39,7 +39,7 @@ char s_ok [] = {"OK\r\n"};
 char s_nok [] = {"ERROR\r\n"};
 volatile unsigned short keep_alive_timer = 0;
 unsigned char probe_keep_cnt = 0;
-probe_connection_e probe_connection = CONN_RESET;
+probe_connection_e probe_connection = PROBE_CONN_RESET;
 probe_status_e probe_status = INIT_SEARCH;
 
 
@@ -112,7 +112,7 @@ void ParseCommsWithProbe (char * str)
     {
         sprintf (dummy_str, "new probe %s\r\n", str + 5);
         Usart1Send (dummy_str);
-        Probe_Set_Connection (CONN_NEW);
+        Probe_Set_Connection (PROBE_CONN_NEW);
         // Wait_ms(2);
         // Usart3Send ("keepalive\r\n");
     }
@@ -134,7 +134,7 @@ void ParseCommsWithProbe (char * str)
 }
 
 
-unsigned char Probe_Get_Status (void)
+probe_connection_e Probe_Get_Status (void)
 {
     return probe_connection;
 }
@@ -152,19 +152,19 @@ void Probe_Comms_Update (void)
     {
     case INIT_SEARCH:
         // get ready for a new antenna search
-        Probe_Set_Connection (CONN_RESET);
+        Probe_Set_Connection (PROBE_CONN_RESET);
         probe_status++;
         break;
 
     case NO_CONN:
         // wait for probe name/connect
-        if (Probe_Get_Status () == CONN_NEW)
+        if (Probe_Get_Status () == PROBE_CONN_NEW)
         {
             probe_keep_cnt = KEEP_ALIVE_CNTR + 1;    // +1 for first keepalive
             probe_status++;
 
             //from here if we get name again, its a reconnect            
-            Probe_Set_Connection (CONN_STABLISH);
+            Probe_Set_Connection (PROBE_CONN_STABLISH_MODE_SQUARE);
             keep_alive_timer = 10;
         }
         break;
@@ -187,7 +187,7 @@ void Probe_Comms_Update (void)
         }
 
         // reconnection? or new antenna
-        if (Probe_Get_Status () == CONN_NEW)
+        if (Probe_Get_Status () == PROBE_CONN_NEW)
             probe_status = INIT_SEARCH;
         
         break;

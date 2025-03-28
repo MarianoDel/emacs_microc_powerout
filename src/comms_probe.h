@@ -11,11 +11,13 @@
 
 // Exported Types Constants and Macros -----------------------------------------
 typedef enum {
-    CONN_RESET,
-    CONN_NEW,
-    CONN_STABLISH
+    PROBE_CONN_RESET,
+    PROBE_CONN_NEW,
+    PROBE_CONN_STABLISH_MODE_SQUARE,
+    PROBE_CONN_STABLISH_MODE_SINE
 
 } probe_connection_e;
+
 
 // Module Exported Functions ---------------------------------------------------
 void Probe_Comms_Update (void);

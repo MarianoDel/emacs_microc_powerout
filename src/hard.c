@@ -136,6 +136,12 @@ void UpdateLed (void)
 }
 
 
+unsigned char Sync_Input_Is_On (void)
+{
+    return SYNC_IN;
+}
+
+
 unsigned char Led_Is_On (void)
 {
     return LED;

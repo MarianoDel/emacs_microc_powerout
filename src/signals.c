@@ -175,7 +175,7 @@ resp_e Signals_Square (treatment_conf_t * pconf)
         // check and set polarity
         // if POLARITY_ALT, set timer and start
         // freq = 0.3Hz psc: 6399 arr: 33333 arr_4: 8333
-        Timer_Polarity (pconf->polarity);
+        // Timer_Polarity (pconf->polarity);    // signals not act on polarity
 
         // all updates done!
         Signals_Reset_Frequency_Intensity_Change_Flag ();

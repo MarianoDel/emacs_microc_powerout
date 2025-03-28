@@ -101,47 +101,90 @@ void Timer_Sine_Signal_Stop (void)
 //////////////////////////////////
 // Functions for Polarity Timer //
 //////////////////////////////////
-void Timer_Polarity (polarity_e new_polarity)
+void Timer_Output_Polarity (output_polarity_e new_polarity)
 {
-    if (new_polarity == POLARITY_ALT)
+    switch (new_polarity)
     {
-        Timer_Polarity_Gpios_To_Alternative ();
-        // set timer and start
-        // freq = 0.3Hz psc: 6399 arr: 33333 arr_4: 8333
-        TIM8_Init();
-        // TIM8_Change(6399, 16667);    //NOT NEEDED all in init
-    }
-    else if (new_polarity == POLARITY_NEG)
-    {
-        Timer_Polarity_Always_Right ();
-    }
-    else    // must be POLARITY_POS
-    {
-        Timer_Polarity_Always_Left ();
+    case OUTPUT_POLARITY_POS:
+	LEFT_CH1_ON;
+	RIGHT_CH1_OFF;
+	LEFT_PLATE_OFF;
+	RIGHT_PLATE_OFF;
+	break;
+
+    case OUTPUT_POLARITY_NEG:
+	LEFT_CH1_OFF;
+	RIGHT_CH1_ON;
+	LEFT_PLATE_OFF;
+	RIGHT_PLATE_OFF;
+	break;
+
+    case OUTPUT_POLARITY_DISC:
+	LEFT_CH1_OFF;
+	RIGHT_CH1_OFF;
+	break;
+
+    case OUTPUT_POLARITY_PLATE_POS:
+	LEFT_CH1_OFF;
+	RIGHT_CH1_OFF;
+	LEFT_PLATE_ON;
+	RIGHT_PLATE_OFF;	
+	break;
+
+    case OUTPUT_POLARITY_PLATE_NEG:
+	LEFT_CH1_OFF;
+	RIGHT_CH1_OFF;
+	LEFT_PLATE_OFF;
+	RIGHT_PLATE_ON;
+	break;
+
+    case OUTPUT_POLARITY_PLATE_DISC:
+	LEFT_PLATE_OFF;
+	RIGHT_PLATE_OFF;	
+	break;
+	
+    default:
+	// all disconnected
+	LEFT_CH1_OFF;
+	RIGHT_CH1_OFF;
+	LEFT_PLATE_OFF;
+	RIGHT_PLATE_OFF;
+	break;
     }
 }
 
+
+void Timer_Polarity (polarity_e new_polarity)
+{
+}
 
 void Timer_Polarity_Always_Right (void)
 {
-    TIM8_Stop ();
-
-    // revert gpios
-    Timer_Polarity_Gpios_To_Push_Pull ();
-    LEFT_OFF;
-    RIGHT_ON;
 }
-
 
 void Timer_Polarity_Always_Left (void)
 {
-    TIM8_Stop ();
-
-    // revert gpios
-    Timer_Polarity_Gpios_To_Push_Pull ();
-    LEFT_ON;
-    RIGHT_OFF;    
 }
+// void Timer_Polarity_Always_Right (void)
+// {
+//     TIM8_Stop ();
+
+//     // revert gpios
+//     Timer_Polarity_Gpios_To_Push_Pull ();
+//     LEFT_OFF;
+//     RIGHT_ON;
+// }
+
+
+// void Timer_Polarity_Always_Left (void)
+// {
+//     TIM8_Stop ();
+
+//     // revert gpios
+//     Timer_Polarity_Gpios_To_Push_Pull ();
+//     LEFT_ON;
+//     RIGHT_OFF;    
+// }
 
 
 void Timer_Polarity_Gpios_To_Push_Pull (void)

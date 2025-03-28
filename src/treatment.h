@@ -25,6 +25,17 @@ typedef enum {
 
 
 typedef enum {
+    OUTPUT_POLARITY_POS,
+    OUTPUT_POLARITY_NEG,
+    OUTPUT_POLARITY_DISC,
+    OUTPUT_POLARITY_PLATE_POS,
+    OUTPUT_POLARITY_PLATE_NEG,
+    OUTPUT_POLARITY_PLATE_DISC    
+
+} output_polarity_e;
+
+
+typedef enum {
     MODE_SQUARE,
     MODE_SINE
     
@@ -45,32 +56,35 @@ typedef struct {
 } treatment_conf_t;
 
 
-
-
-
 // Module Exported Functions ---------------------------------------------------
 void Treatment_Manager (void);
-resp_e Treatment_SetFrequency_Str (char * str);
-resp_e Treatment_SetFrequency (unsigned short fint, unsigned short fdec);
-resp_e Treatment_SetIntensity_Str (char * str);
-resp_e Treatment_SetIntensity (unsigned short intensity);
+resp_e Treatment_SetFrequency_Str (mode_e mode, char * str);
+resp_e Treatment_SetFrequency (mode_e mode, unsigned short fint, unsigned short fdec);
+resp_e Treatment_SetIntensity_Str (mode_e mode, char * str);
+resp_e Treatment_SetIntensity (mode_e mode, unsigned short intensity);
 resp_e Treatment_SetPolarity_Str (char * str);
-resp_e Treatment_SetMode_Str (char * str);
-resp_e Treatment_SetThreshold_Str (char * str);
-resp_e Treatment_SetThreshold (unsigned short threshold);
-void Treatment_Start (void);
+void Treatment_Start (mode_e mode);
 void Treatment_Stop (void);
-resp_e Treatment_SetGain_Str (char * str);
-resp_e Treatment_SetGain (unsigned short gain);
-unsigned char Treatment_GetGain (void);
 
-unsigned char Treatment_Start_Flag (void);
-void Treatment_Start_Flag_Set (void);
-void Treatment_Start_Flag_Reset (void);
+unsigned char Treatment_Sine_Start_Flag (void);
+void Treatment_Sine_Start_Flag_Set (void);
+void Treatment_Sine_Start_Flag_Reset (void);
+
+unsigned char Treatment_Square_Start_Flag (void);
+void Treatment_Square_Start_Flag_Set (void);
+void Treatment_Square_Start_Flag_Reset (void);
 
 unsigned char Treatment_Stop_Flag (void);
 void Treatment_Stop_Flag_Set (void);
 void Treatment_Stop_Flag_Reset (void);
+
+// not used
+resp_e Treatment_SetThreshold_Str (char * str);
+resp_e Treatment_SetThreshold (unsigned short threshold);
+resp_e Treatment_SetMode_Str (char * str);
+resp_e Treatment_SetGain_Str (char * str);
+resp_e Treatment_SetGain (unsigned short gain);
+unsigned char Treatment_GetGain (void);
 
 
 #endif

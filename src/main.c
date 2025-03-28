@@ -70,7 +70,7 @@ int main (void)
         SysTickError();
 
     // Hardware Tests
-    TF_Hardware_Tests ();
+    // TF_Hardware_Tests ();
 
     // --- main program inits. ---
     //-- DMA configuration.
@@ -86,7 +86,7 @@ int main (void)
     DAC_Output1(1400);
     DAC_Output2(0);    
     
-    //-- Comms with rasp
+    //-- Comms with main uc
     Usart1Config ();
 
     //-- Comms with probes
