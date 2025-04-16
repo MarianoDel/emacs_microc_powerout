@@ -113,7 +113,7 @@ void Treatment_Manager (void)
 	    polarity_on_sync = 0;
 	}
 
- 	if (Probe_Get_Status () == PROBE_CONN_STABLISH_MODE_SQUARE)
+ 	if (Probe_Get_Mode () == PROBE_MODE_SQUARE)
 	{
 	    // get meas and report every 400ms
             if (Meas_Square_V2(&meas_to_report))
@@ -134,7 +134,7 @@ void Treatment_Manager (void)
             treat_state = TREATMENT_STOPPING;
         }
 
-	if (Probe_Get_Status () == PROBE_CONN_STABLISH_MODE_SQUARE)
+	if (Probe_Get_Mode () == PROBE_MODE_SQUARE)
 	{
 	    if (Meas_Online_Update (&res_int))
 	    {
@@ -175,7 +175,7 @@ void Treatment_Manager (void)
             treat_state = TREATMENT_STOPPING;
         }
 
-	if (Probe_Get_Status () == PROBE_CONN_STABLISH_MODE_SINE)
+	if (Probe_Get_Mode () == PROBE_MODE_SINE)
 	{
 	    if (Meas_Sine_Update (&cond_to_report))
 	    {

@@ -105,7 +105,7 @@ int main (void)
         // // update the antennas module states
         // AntennaUpdateStates ();
 
-        // update the channels comms
+        // update comms with main
         Comms_Update ();
 
         // update the probe comms

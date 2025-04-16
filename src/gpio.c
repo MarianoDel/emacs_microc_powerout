@@ -148,7 +148,7 @@ void GpioInit (void)
     //--- GPIOB High Side -------------------//
     //PB8 NC
     //PB9 NC
-    //PB10 alternative Tx Usart3
+    //PB10 alternative Tx Usart3 open drain
     //PB11 alternative Rx Usart3
     //PB12 NC
     //PB13 SYNC_IN_CH1 input pullup
@@ -156,7 +156,7 @@ void GpioInit (void)
     //PB15 NC
     temp = GPIOB->CRH;
     temp &= 0xFF0F00FF;
-    temp |= 0x00808B00;
+    temp |= 0x00808F00;
     GPIOB->CRH = temp;    
 
     //--- GPIOB Pull-Up Pull-Dwn ------------------//

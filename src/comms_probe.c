@@ -19,15 +19,7 @@
 // Module Private Types Constants and Macros -----------------------------------
 #define SIZEOF_RXDATA    128
 #define KEEP_ALIVE_CNTR    3
-#define KEEP_ALIVE_TT    1000
-
-typedef enum {
-    INIT_SEARCH,
-    NO_CONN,
-    IN_STANDBY
-    
-} probe_status_e;
-    
+#define KEEP_ALIVE_TT    1000    
 
 
 // Externals -------------------------------------------------------------------
@@ -40,12 +32,14 @@ char s_nok [] = {"ERROR\r\n"};
 volatile unsigned short keep_alive_timer = 0;
 unsigned char probe_keep_cnt = 0;
 probe_connection_e probe_connection = PROBE_CONN_RESET;
-probe_status_e probe_status = INIT_SEARCH;
+
 
 
 // Module Private Functions ----------------------------------------------------
 void ParseCommsWithProbe (char * str);
 void Probe_Set_Connection (probe_connection_e new_conn_status);
+void Probe_Set_Mode (probe_mode_e new_mode);
+void Probe_Set_Status (probe_status_e new_mode);
 
 
 
@@ -63,9 +57,7 @@ void Comms_Probe (void)
     if (Usart3HaveData ())
     {
         Usart3HaveDataReset ();
-        
         Usart3ReadBuffer (buff, SIZEOF_RXDATA);
-
         ParseCommsWithProbe(buff);
     }
 }
@@ -74,49 +66,28 @@ void Comms_Probe (void)
 void ParseCommsWithProbe (char * str)
 {
     char dummy_str [40] = { 0 };
-
-    // antenna name
-    
-    // // new model name Probe1.\r\n
-    // if (!strncmp(str, "name ", (sizeof("name ") - 1)))
-    // {
-    //     char sname [21] = { 0 };        
-    //     char * ps = str + 5;
-    //     int finded = 0;
-        
-    //     for (int i = 0; i < 20; i++)
-    //     {
-    //         if (*(ps + i) == '.')
-    //         {
-    //             if (i > 1)    // at least two chars
-    //             {
-    //                 finded = 1;
-    //                 break;
-    //             }
-    //         }
-    //         else
-    //             sname[i] = *(ps + i);
-
-    //     }
-
-    //     if (finded)
-    //     {
-    //         sprintf (dummy_str, "new probe %s\r\n", sname);
-    //         Usart1Send (dummy_str);
-    //         Probe_Set_Connection (CONN_NEW);
-    //     }
-    // }
     
     // name Probe1\r\n
-    if (!strncmp(str, "name ", (sizeof("name ") - 1)))
+    if (!strncmp(str, "name NervSync", (sizeof("name NervSync") - 1)))
     {
-        sprintf (dummy_str, "new probe %s\r\n", str + 5);
+	// clean interface
+	Usart1Send ("\r\n");
+        strcpy (dummy_str, "new probe NervSync\r\n");
         Usart1Send (dummy_str);
         Probe_Set_Connection (PROBE_CONN_NEW);
-        // Wait_ms(2);
-        // Usart3Send ("keepalive\r\n");
+	Probe_Set_Mode (PROBE_MODE_SQUARE);
     }
 
+    if (!strncmp(str, "name CellSync", (sizeof("name CellSync") - 1)))
+    {
+	// clean interface
+	Usart1Send ("\r\n");
+        strcpy (dummy_str, "new probe CellSync\r\n");
+        Usart1Send (dummy_str);
+        Probe_Set_Connection (PROBE_CONN_NEW);
+	Probe_Set_Mode (PROBE_MODE_SINE);
+    }
+    
     // keepalive answer
     else if (!strncmp(str, "ok", (sizeof("ok") - 1)))
     {
@@ -126,17 +97,28 @@ void ParseCommsWithProbe (char * str)
 
     else if (!strncmp(str, "start", (sizeof("start") - 1)))
     {
-        Usart1Send ("probe start\r\n");
-        // Treatment_Start ();
+	if (Probe_Get_Mode() == PROBE_MODE_SQUARE)
+	    Usart1Send ("probe start square\r\n");
+	else if (Probe_Get_Mode() == PROBE_MODE_SINE)
+	    Usart1Send ("probe start sine\r\n");
+	
         if (probe_keep_cnt < KEEP_ALIVE_CNTR)
             probe_keep_cnt++;
     }    
 }
 
 
-probe_connection_e Probe_Get_Status (void)
+
+probe_mode_e probe_mode = PROBE_MODE_NONE;
+probe_mode_e Probe_Get_Mode (void)
 {
-    return probe_connection;
+    return probe_mode;
+}
+
+
+void Probe_Set_Mode (probe_mode_e new_mode)
+{
+    probe_mode = new_mode;
 }
 
 
@@ -146,25 +128,33 @@ void Probe_Set_Connection (probe_connection_e new_conn_status)
 }
 
 
+probe_connection_e Probe_Get_Connection (void)
+{
+    return probe_connection;
+}
+
+
 void Probe_Comms_Update (void)
 {
-    switch (probe_status)
+    switch (Probe_Get_Status())
     {
     case INIT_SEARCH:
         // get ready for a new antenna search
         Probe_Set_Connection (PROBE_CONN_RESET);
-        probe_status++;
+	Probe_Set_Mode (PROBE_MODE_NONE);
+        Probe_Set_Status(NO_CONN);
         break;
 
     case NO_CONN:
         // wait for probe name/connect
-        if (Probe_Get_Status () == PROBE_CONN_NEW)
+        if (Probe_Get_Connection () == PROBE_CONN_NEW)
         {
             probe_keep_cnt = KEEP_ALIVE_CNTR + 1;    // +1 for first keepalive
-            probe_status++;
+            Probe_Set_Status(IN_STANDBY);
 
-            //from here if we get name again, its a reconnect            
-            Probe_Set_Connection (PROBE_CONN_STABLISH_MODE_SQUARE);
+            //from here if we get name again, its a reconnect
+	    Probe_Set_Status (IN_STANDBY);
+	    Probe_Set_Connection (PROBE_CONN_STABLISH);
             keep_alive_timer = 10;
         }
         break;
@@ -181,23 +171,35 @@ void Probe_Comms_Update (void)
             else
             {
                 // connection lost
-                probe_status = INIT_SEARCH;
+                Probe_Set_Status (INIT_SEARCH);
                 Usart1Send("none probe\r\n");
             }
         }
 
         // reconnection? or new antenna
-        if (Probe_Get_Status () == PROBE_CONN_NEW)
-            probe_status = INIT_SEARCH;
+        if (Probe_Get_Connection () == PROBE_CONN_NEW)
+            Probe_Set_Status(INIT_SEARCH);
         
         break;
 
     default:
-        probe_status = INIT_SEARCH;
+        Probe_Set_Status(INIT_SEARCH);
         break;
     }
 
     Comms_Probe ();
 }
 
+
+probe_status_e probe_status = INIT_SEARCH;
+probe_status_e Probe_Get_Status (void)
+{
+    return probe_status;
+}
+
+
+void Probe_Set_Status (probe_status_e new_status)
+{
+    probe_status = new_status;
+}
 //---- end of file ----//
