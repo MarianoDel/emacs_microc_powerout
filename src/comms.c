@@ -16,11 +16,6 @@
 // #include "channels_defs.h"
 #include "usart.h"
 #include "treatment.h"
-// #include "utils.h"
-// #include "antennas.h"
-
-// #include "parameters.h"
-// #include "tamper_funcs.h"
 
 #include <string.h>
 #include <stdio.h>
@@ -31,7 +26,6 @@
 char s_ans_ok [] = {"ok\n"};
 char s_ans_nok [] = {"nok\n"};
 #define SIZEOF_LOCAL_BUFF    128
-#define COMMS_TT_RELOAD    3000
 
 
 // Externals -------------------------------------------------------------------
@@ -39,7 +33,6 @@ char s_ans_nok [] = {"nok\n"};
 
 // Globals ---------------------------------------------------------------------
 char local_buff [SIZEOF_LOCAL_BUFF];
-volatile unsigned short comms_timeout = 0;
     
 
 // Module Private Functions ----------------------------------------------------
@@ -47,22 +40,6 @@ static void Comms_Messages (char * msg_str);
 
 
 // Module Functions ------------------------------------------------------------
-void Comms_Timeouts (void)
-{
-    if (comms_timeout)
-        comms_timeout--;
-}
-
-
-unsigned char Comms_Rpi_Answering (void)
-{
-    if (comms_timeout)
-        return 1;
-    
-    return 0;
-}
-
-
 void Comms_Update (void)
 {
     if (Usart1HaveData())
@@ -71,7 +48,6 @@ void Comms_Update (void)
         Led_On();
         Usart1ReadBuffer(local_buff, SIZEOF_LOCAL_BUFF);
         Comms_Messages(local_buff);
-        comms_timeout = COMMS_TT_RELOAD;
         Led_Off();
     }
 }

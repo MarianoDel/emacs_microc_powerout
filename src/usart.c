@@ -679,15 +679,14 @@ void UART4_IRQHandler (void)
 
         if (prx4 < &rx4buff[SIZEOF_RXDATA - 1])
         {
-            if ((dummy == '\n') || (dummy == '\r') || (dummy == 26))		//26 es CTRL-Z
+            //al /r no le doy bola
+            if (dummy == '\r')
+            {
+            }            
+            else if ((dummy == '\n') || (dummy == 26))		//26 es CTRL-Z
             {
                 *prx4 = '\0';
                 uart4_have_data = 1;
-                // if (LED)
-                // 	LED_OFF;
-                // else
-                // 	LED_ON;
-
             }
             else
             {
@@ -827,15 +826,14 @@ void UART5_IRQHandler (void)
 
         if (prx5 < &rx5buff[SIZEOF_RXDATA - 1])
         {
-            if ((dummy == '\n') || (dummy == '\r') || (dummy == 26))		//26 es CTRL-Z
+            //al /r no le doy bola
+            if (dummy == '\r')
+            {
+            }            
+            else if ((dummy == '\n') || (dummy == 26))		//26 es CTRL-Z
             {
                 *prx5 = '\0';
                 uart5_have_data = 1;
-                // if (LED)
-                // 	LED_OFF;
-                // else
-                // 	LED_ON;
-
             }
             else
             {

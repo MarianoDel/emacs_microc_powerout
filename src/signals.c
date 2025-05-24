@@ -101,7 +101,8 @@ const unsigned short sinusoidal_table [] = {12,25,37,50,62,75,87,100,112,125,
                                             62,50,37,25,12,0,};
 
 
-const unsigned short dac_offset = 350;
+// const unsigned short dac_offset = 350;    // original
+const unsigned short dac_offset = 226;    // ajuste 24-05-2025
 volatile unsigned short signals_timeout = 0;
 
 
