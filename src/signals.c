@@ -31,9 +31,7 @@
 typedef enum {
     SQUARE_INIT,
     SQUARE_FIRST_EDGE,
-    SQUARE_POSITIVE_PLATEAU,
-    SQUARE_SECOND_EDGE,
-    SQUARE_NEGATIVE_PLATEAU
+    SQUARE_SECOND_EDGE
         
 } signals_square_states_e;
 
@@ -171,8 +169,9 @@ resp_e Signals_Square (treatment_conf_t * pconf)
 
         // set timers here, check arr != 0
         Timer_Square_Signal_Reset();
-        Timer_Square_Set_Registers (td.psc, td.arr_div_4);    //and start timer
-
+        // Timer_Square_Set_Registers (td.psc, td.arr_div_4);    //and start timer
+	// new only two flanks or edges
+        Timer_Square_Set_Registers (td.psc, td.arr >> 1);
         // check and set polarity
         // if POLARITY_ALT, set timer and start
         // freq = 0.3Hz psc: 6399 arr: 33333 arr_4: 8333
@@ -191,48 +190,34 @@ resp_e Signals_Square (treatment_conf_t * pconf)
             Timer_Square_Signal_Reset();
             Signals_Set_Rising_Ouput (pconf);
             square_state++;
-        }
-        break;
 
-    case SQUARE_POSITIVE_PLATEAU:
-        if (Timer_Square_Signal_Ended())
-        {
-            Timer_Square_Signal_Reset();
-            Signals_Get_High_Current ();
-            square_state++;
-        }
-
-        // get meas every second on high edge
-        if (!signals_timeout)
-        {
-            signals_timeout = 1000;
-            Meas_Online (pconf->itov_high);
+            if (Signals_Get_Frequency_Intensity_Change_Flag ())
+                square_state = SQUARE_INIT;
         }
         break;
 
     case SQUARE_SECOND_EDGE:
         if (Timer_Square_Signal_Ended())
         {
+	    // meas every second before second edge
+	    // if (!signals_timeout)
+	    // {
+	    // 	signals_timeout = 1000;
+	    // 	Meas_Online (pconf->itov_high);
+	    // }
+
+	    if (!signals_timeout)
+	    {
+		signals_timeout = 1000;
+		Meas_Online_Calc_Resistance_V2 (pconf->itov_high);
+	    }	    
+
             Timer_Square_Signal_Reset();
             Signals_Set_Falling_Ouput (pconf);
-            square_state++;
+            square_state--;
         }
-        
         break;
 
-    case SQUARE_NEGATIVE_PLATEAU:
-        if (Timer_Square_Signal_Ended())
-        {
-            Timer_Square_Signal_Reset();
-            Signals_Get_Low_Current ();
-
-            if (Signals_Get_Frequency_Intensity_Change_Flag ())
-                square_state = SQUARE_INIT;
-            else
-                square_state = SQUARE_FIRST_EDGE;
-        }                
-        break;
-        
     default:
         square_state = SQUARE_INIT;
         break;

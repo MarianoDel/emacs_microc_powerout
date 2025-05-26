@@ -48,14 +48,23 @@ treatment_conf_t treat_conf_square;
 treatment_e treat_state = 0;
 unsigned char polarity_on_sync = 0;
 
+volatile unsigned short treatment_meas_timeout = 0;
+
 
 // Module Private Functions ----------------------------------------------------
 
 
 // Module Functions ------------------------------------------------------------
+void Treatment_Timeouts (void)
+{
+    if (treatment_meas_timeout)
+	treatment_meas_timeout--;
+}
+
+
 void Treatment_Manager (void)
 {
-    unsigned char meas_to_report = 0;
+    // unsigned char meas_to_report = 0;
     unsigned short cond_to_report = 0;
     unsigned int res_int = 0;
     
@@ -67,8 +76,13 @@ void Treatment_Manager (void)
         ChangeLed_With_Timer (LED_TREATMENT_STANDBY, 2000);
 	// ChangeLed_With_Timer (LED_TREATMENT_STANDBY, 0);
 
-	Timer_Output_Polarity (OUTPUT_POLARITY_PLATE_POS);
+	// Timer_Output_Polarity (OUTPUT_POLARITY_PLATE_POS);
 	// Timer_Output_Polarity (OUTPUT_POLARITY_POS);
+
+	// new meas
+	Meas_Square_V3_Set_Ref();
+	Timer_Output_Polarity (OUTPUT_POLARITY_NEG);
+	
         treat_state++;
         break;
         
@@ -116,12 +130,26 @@ void Treatment_Manager (void)
  	if (Probe_Get_Mode () == PROBE_MODE_SQUARE)
 	{
 	    // get meas and report every 400ms
-            if (Meas_Square_V2(&meas_to_report))
-            {
+            // if (Meas_Square_V2(&meas_to_report))
+            // {
+            //     char buff [40];
+            //     sprintf(buff, "display %d\r\n", meas_to_report);
+            //     Usart1Send(buff);                
+            // }
+	    if (!treatment_meas_timeout)
+	    {
+		unsigned char display = 0;
+		unsigned short adc = 0;
+		unsigned short adc2 = 0; 		
+
                 char buff [40];
-                sprintf(buff, "display %d\r\n", meas_to_report);
+
+		treatment_meas_timeout = 400;
+		Meas_Square_V3(&display, &adc, &adc2);
+
+                sprintf(buff, "display %d adc %d adc2 %d\r\n", display, adc, adc2);
                 Usart1Send(buff);                
-            }
+	    }
 	}
         break;
         
@@ -136,13 +164,23 @@ void Treatment_Manager (void)
 
 	if (Probe_Get_Mode () == PROBE_MODE_SQUARE)
 	{
-	    if (Meas_Online_Update (&res_int))
+	    if (Meas_Online_Flag_Get())
 	    {
+		Meas_Online_Flag_Reset();
+		res_int = Meas_Online_Get_Value();
+
 		// new meas filtered value, report it
 		char buff [40];
 		sprintf(buff, "resistance %d\r\n", res_int);
 		Usart1Send(buff);
 	    }
+	    // if (Meas_Online_Update (&res_int))
+	    // {
+	    // 	// new meas filtered value, report it
+	    // 	char buff [40];
+	    // 	sprintf(buff, "resistance %d\r\n", res_int);
+	    // 	Usart1Send(buff);
+	    // }
 	}
 
 	// check sync in continuosly
@@ -151,8 +189,7 @@ void Treatment_Manager (void)
 	    if (!polarity_on_sync)
 	    {
 		polarity_on_sync = 1;
-		Timer_Output_Polarity(OUTPUT_POLARITY_PLATE_POS);
-		// Timer_Output_Polarity(OUTPUT_POLARITY_POS);
+		Timer_Output_Polarity(OUTPUT_POLARITY_POS);
 	    }
 	}
 	else
@@ -160,8 +197,7 @@ void Treatment_Manager (void)
 	    if (polarity_on_sync)
 	    {
 		polarity_on_sync = 0;
-		Timer_Output_Polarity(OUTPUT_POLARITY_PLATE_NEG);
-		// Timer_Output_Polarity(OUTPUT_POLARITY_NEG);
+		Timer_Output_Polarity(OUTPUT_POLARITY_NEG);
 	    }
 	}
         break;
@@ -191,8 +227,7 @@ void Treatment_Manager (void)
 	    if (!polarity_on_sync)
 	    {
 		polarity_on_sync = 1;
-		Timer_Output_Polarity(OUTPUT_POLARITY_PLATE_POS);
-		// Timer_Output_Polarity(OUTPUT_POLARITY_POS);
+		Timer_Output_Polarity(OUTPUT_POLARITY_POS);
 	    }
 	}
 	else
@@ -200,8 +235,7 @@ void Treatment_Manager (void)
 	    if (polarity_on_sync)
 	    {
 		polarity_on_sync = 0;
-		Timer_Output_Polarity(OUTPUT_POLARITY_PLATE_NEG);
-		// Timer_Output_Polarity(OUTPUT_POLARITY_NEG);
+		Timer_Output_Polarity(OUTPUT_POLARITY_NEG);
 	    }
 	}
         break;
@@ -212,9 +246,10 @@ void Treatment_Manager (void)
         Usart1Send("stopped\r\n");
 
 	// always connect for meas square
-	Timer_Output_Polarity (OUTPUT_POLARITY_PLATE_NEG);
-	// Timer_Output_Polarity (OUTPUT_POLARITY_NEG);	
-	Meas_Square_Reset();
+	Timer_Output_Polarity (OUTPUT_POLARITY_NEG);	
+
+	// Meas_Square_Reset();
+
 	treat_state = TREATMENT_STANDBY;
 	// end of always connect for meas square
 

@@ -122,25 +122,8 @@ void Timer_Output_Polarity (output_polarity_e new_polarity)
     case OUTPUT_POLARITY_DISC:
 	LEFT_CH1_OFF;
 	RIGHT_CH1_OFF;
-	break;
-
-    case OUTPUT_POLARITY_PLATE_POS:
-	LEFT_CH1_OFF;
-	RIGHT_CH1_OFF;
-	LEFT_PLATE_ON;
-	RIGHT_PLATE_OFF;	
-	break;
-
-    case OUTPUT_POLARITY_PLATE_NEG:
-	LEFT_CH1_OFF;
-	RIGHT_CH1_OFF;
 	LEFT_PLATE_OFF;
-	RIGHT_PLATE_ON;
-	break;
-
-    case OUTPUT_POLARITY_PLATE_DISC:
-	LEFT_PLATE_OFF;
-	RIGHT_PLATE_OFF;	
+	RIGHT_PLATE_OFF;
 	break;
 	
     default:
@@ -154,6 +137,7 @@ void Timer_Output_Polarity (output_polarity_e new_polarity)
 }
 
 
+// polarity now its on sync
 void Timer_Polarity (polarity_e new_polarity)
 {
 }

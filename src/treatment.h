@@ -27,10 +27,7 @@ typedef enum {
 typedef enum {
     OUTPUT_POLARITY_POS,
     OUTPUT_POLARITY_NEG,
-    OUTPUT_POLARITY_DISC,
-    OUTPUT_POLARITY_PLATE_POS,
-    OUTPUT_POLARITY_PLATE_NEG,
-    OUTPUT_POLARITY_PLATE_DISC    
+    OUTPUT_POLARITY_DISC
 
 } output_polarity_e;
 
@@ -86,6 +83,7 @@ resp_e Treatment_SetGain_Str (char * str);
 resp_e Treatment_SetGain (unsigned short gain);
 unsigned char Treatment_GetGain (void);
 
+void Treatment_Timeouts (void);
 
 #endif
 

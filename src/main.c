@@ -73,13 +73,14 @@ int main (void)
     // TF_Hardware_Tests ();
 
     // --- main program inits. ---
+    // Init ADC with DMA    
     //-- DMA configuration.
     DMAConfig();
     DMA_ENABLE;
     
     //-- ADC with DMA
     AdcConfig();
-    // ADC_START;
+    AdcStart();
 
     //-- DAC init for signal generation
     DAC_Config ();
@@ -97,7 +98,9 @@ int main (void)
     TIM7_Init();
     
     //-- Activate meas module
-    Meas_Square_Init ();
+    // Meas_Square_Init ();
+    Meas_Module_Init ();
+
     
     //-- Main Loop --------------------------
     while (1)
@@ -113,7 +116,10 @@ int main (void)
         Treatment_Manager();
 
         // the update of led and buzzer on Treatment_Manager()
-        UpdateLed();
+        // UpdateLed();
+
+	// meas always running
+	Meas_Module_Update ();
 
     }
 }
@@ -132,9 +138,9 @@ void TimingDelay_Decrement(void)
 
     Comms_Probe_Timeout ();
 
-    Meas_Timeout ();
+    // Meas_Timeout ();
 
-    // Treatment_Timeouts ();
+    Treatment_Timeouts ();
     
     HARD_Timeouts();
 
