@@ -65,7 +65,7 @@ void Treatment_Timeouts (void)
 void Treatment_Manager (void)
 {
     // unsigned char meas_to_report = 0;
-    unsigned short cond_to_report = 0;
+    // unsigned short cond_to_report = 0;
     unsigned int res_int = 0;
     
     switch (treat_state)
@@ -109,7 +109,6 @@ void Treatment_Manager (void)
 	    Signals_Square_Reset ();
 	    ChangeLed(LED_TREATMENT_SQUARE_RUNNING);
 	    treat_state = TREATMENT_SQUARE_RUNNING;
-	    Meas_Online_Reset();
 	    polarity_on_sync = 0;
 	}
 
@@ -123,7 +122,7 @@ void Treatment_Manager (void)
 
             DAC_Output2(0);
 
-	    Meas_Sine_Reset();
+	    // Meas_Sine_Reset();
 	    polarity_on_sync = 0;
 	}
 
@@ -167,11 +166,16 @@ void Treatment_Manager (void)
 	    if (Meas_Online_Flag_Get())
 	    {
 		Meas_Online_Flag_Reset();
-		res_int = Meas_Online_Get_Value();
+		// res_int = Meas_Online_Get_Value();
+		unsigned short current = 0;
+		unsigned short meas = 0;
+
+		res_int = Meas_Online_Get_Value(&current, &meas);		
 
 		// new meas filtered value, report it
 		char buff [40];
-		sprintf(buff, "resistance %d\r\n", res_int);
+		// sprintf(buff, "resistance %d\r\n", res_int);
+		sprintf(buff, "resistance %d cs %d m %d\r\n", res_int, current, meas);		
 		Usart1Send(buff);
 	    }
 	    // if (Meas_Online_Update (&res_int))
@@ -213,11 +217,19 @@ void Treatment_Manager (void)
 
 	if (Probe_Get_Mode () == PROBE_MODE_SINE)
 	{
-	    if (Meas_Sine_Update (&cond_to_report))
+	    if (Meas_Online_Flag_Get())
 	    {
+		Meas_Online_Flag_Reset();
+		// res_int = Meas_Online_Get_Value();
+		unsigned short current = 0;
+		unsigned short meas = 0;
+
+		res_int = Meas_Online_Get_Value(&current, &meas);		
+
 		// new meas filtered value, report it
 		char buff [40];
-		sprintf(buff, "resistance %d\r\n", cond_to_report);
+		// sprintf(buff, "resistance %d\r\n", res_int);
+		sprintf(buff, "resistance %d cs %d m %d\r\n", res_int, current, meas);		
 		Usart1Send(buff);
 	    }
 	}

@@ -138,8 +138,6 @@ void TimingDelay_Decrement(void)
 
     Comms_Probe_Timeout ();
 
-    // Meas_Timeout ();
-
     Treatment_Timeouts ();
     
     HARD_Timeouts();

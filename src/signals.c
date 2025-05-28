@@ -231,7 +231,6 @@ resp_e Signals_Square (treatment_conf_t * pconf)
 const unsigned short * psine;
 signals_sine_states_e sine_state = SINE_INIT;
 signals_square_cut_e square_cut_state = SQUARE_NO_CUTTING;
-unsigned char meas_taken = 0;
 resp_e Signals_Sinusoidal (treatment_conf_t * pconf)
 {
     resp_e resp = resp_continue;
@@ -271,7 +270,6 @@ resp_e Signals_Sinusoidal (treatment_conf_t * pconf)
         // all updates done!
         Signals_Reset_Frequency_Intensity_Change_Flag ();
 
-        meas_taken = 0;
         square_cut_state = SQUARE_NO_CUTTING;
         resp = resp_continue;
         sine_state++;
@@ -285,12 +283,14 @@ resp_e Signals_Sinusoidal (treatment_conf_t * pconf)
             {
                 unsigned short dac_value;
                 dac_value = Signals_Set_Sinusoidal_High (pconf, *psine);
+
                 // get a meas point on peak
                 if ((psine >= &sinusoidal_table[127]) &&
-                    (!meas_taken))
+                    (!signals_timeout))
                 {
-                    meas_taken = 1;
-                    Meas_Sine (dac_value);                    
+		    signals_timeout = 1000;
+		    Meas_Online_Calc_Resistance_V2 (dac_value);
+                    // Meas_Sine (dac_value);                    
                 }
             }
             else
@@ -305,7 +305,6 @@ resp_e Signals_Sinusoidal (treatment_conf_t * pconf)
             else
             {
                 psine = sinusoidal_table;
-                meas_taken = 0;
 
                 if (pconf->polarity == POLARITY_ALT)
                     Timer_Polarity_Always_Right();
@@ -325,10 +324,11 @@ resp_e Signals_Sinusoidal (treatment_conf_t * pconf)
                 dac_value = Signals_Set_Sinusoidal_Low (pconf, *psine);
                 // get a meas point on peak
                 if ((psine >= &sinusoidal_table[127]) &&
-                    (!meas_taken))
+                    (!signals_timeout))
                 {
-                    meas_taken = 1;
-                    Meas_Sine (dac_value);                    
+		    signals_timeout = 1000;
+		    Meas_Online_Calc_Resistance_V2 (dac_value);
+                    // Meas_Sine (dac_value);                    
                 }                
             }
             else
@@ -343,7 +343,6 @@ resp_e Signals_Sinusoidal (treatment_conf_t * pconf)
             else
             {
                 psine = sinusoidal_table;
-                meas_taken = 0;                
 
                 if (pconf->polarity == POLARITY_ALT)
                     Timer_Polarity_Always_Left();
@@ -444,13 +443,6 @@ resp_e Signals_Timers_Calculation (timers_data_st * td)
 unsigned short Signals_Current_to_VoltagePts (unsigned short current_ua)
 {
     unsigned int calc = 0;
-
-    // FOR 3.3K POWER GEN
-    // current on 3k3 resistor to voltage on 3.3V
-    // ex. 25uA * 3300 * 4095 / 3.3V = 102pts
-    // algo 25 * 4095 / 1000 = 102pts
-    // calc = current_ua * 4095;
-    // calc = calc / 1000;
 
     // FOR 2.7K POWER GEN
     // current on 2k7 resistor to voltage on 3.3V
