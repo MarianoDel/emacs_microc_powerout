@@ -41,6 +41,7 @@ ma16_u16_data_obj_t sense_power_filter;
 // Module Private Functions ----------------------------------------------------
 void Meas_Set_Dac_V2 (unsigned short dac_value);
 unsigned char Meas_Calc_Display_Value_V2 (unsigned char gain, unsigned short meas);
+unsigned char Meas_Calc_Display_Value_V3 (unsigned char gain, unsigned short meas);
 
 
 // Module Functions ------------------------------------------------------------
@@ -69,15 +70,15 @@ void Meas_Module_Update (void)
 
 void Meas_Square_V3_Set_Ref (void)
 {
-    // Meas_Set_Dac_V2 (310);    // reference for meas in 2uA 144mV on Rmeas
-    // Meas_Set_Dac_V2 (620);    // reference for meas in 4uA 144mV on Rmeas
+    // Meas_Set_Dac_V2 (554);    // reference for meas in 6.6uA 448mV on Rmeas
     Meas_Set_Dac_V2 (2048);    // reference for meas in 4uA 144mV on Rmeas    
 }
 
 
 void Meas_Square_V3 (unsigned char * result, unsigned short * meas_raw, unsigned short * power_raw)
 {
-    *result = Meas_Calc_Display_Value_V2 (dac_gain_saved, meas_filtered);
+    // *result = Meas_Calc_Display_Value_V2 (dac_gain_saved, meas_filtered);
+    *result = Meas_Calc_Display_Value_V3 (dac_gain_saved, meas_filtered);    
     *meas_raw = meas_filtered;
     *power_raw = power_filtered;
     // *meas_raw = Sense_Meas;
@@ -124,6 +125,55 @@ unsigned char Meas_Calc_Display_Value_V2 (unsigned char gain, unsigned short mea
         gain_ref = 100;
     
     return (unsigned char) gain_ref;
+}
+
+
+unsigned char Meas_Calc_Display_Value_V3 (unsigned char gain, unsigned short meas)
+{
+    // full conductivity eq 330 ohms
+    if (meas <= 7)
+	return 100;
+
+    // no conductivity eq 33k 
+    if (meas > 460)
+        return 0;
+
+    // with gain    
+    // gain compensation on hundreds
+    unsigned short gain_ref = gain * 460;
+    unsigned short meas_ref = meas * 100;
+
+    if (gain_ref >= meas_ref)
+	return 100;
+
+    meas_ref = meas_ref - gain_ref;
+    meas_ref = meas_ref / 100;
+    
+    // disp = 22 meas_ref + 10154
+    unsigned int calc = 22 * meas_ref;
+
+    if (calc >= 10154)
+	return 0;
+
+    unsigned short display = 10154 - calc;
+    display = display / 100;
+    // end of with gain
+    
+    // with no gain
+    // int calc = -22 * meas + 10154;
+    // unsigned int calc = 22 * meas;
+
+    // if (calc >= 10154)
+    // 	return 0;
+
+    // unsigned short display = 10154 - calc;
+    // display = display / 100;
+    // end of with no gain
+    
+    if (display > 100)
+	display = 100;
+    
+    return (unsigned char) display;
 }
 
 

@@ -87,20 +87,6 @@ void Treatment_Manager (void)
         break;
         
     case TREATMENT_STANDBY:
-            // // for square negative meas
-            // if (treatment_conf.mode == MODE_SQUARE)
-            // {
-            //     Timer_Polarity (POLARITY_NEG);
-            //     Meas_Square_Reset();
-            //     treat_state = TREATMENT_STANDBY_SQUARE_WITH_COMMS;
-            // }
-            // else
-            // {
-            //     Timer_Polarity (POLARITY_POS);
-            //     DAC_Output2(0);
-            //     treat_state = TREATMENT_STANDBY_SINE_WITH_COMMS;
-            // }
-
 
 	if (Treatment_Square_Start_Flag ())
 	{
@@ -258,28 +244,11 @@ void Treatment_Manager (void)
         Usart1Send("stopped\r\n");
 
 	// always connect for meas square
+	Meas_Square_V3_Set_Ref();
 	Timer_Output_Polarity (OUTPUT_POLARITY_NEG);	
 
-	// Meas_Square_Reset();
-
 	treat_state = TREATMENT_STANDBY;
-	// end of always connect for meas square
 
-        // if no conn with probe or square, change for meas
-	// if (Probe_Get_Status () == PROBE_PLUGGED_WITH_COMMS_MODE_SQUARE)
-	// {
-        //     Timer_Polarity (POLARITY_NEG);
-        //     Meas_Square_Reset();
-        //     treat_state = TREATMENT_STANDBY;
-	// }
-        // else
-        // {
-        //     Timer_Polarity (POLARITY_POS);
-        //     DAC_Output2(0);
-        //     treat_state = TREATMENT_STANDBY;
-        // }
-	// end of if no conn with probe or square, change for meas
-	
         ChangeLed(LED_TREATMENT_STANDBY);
         break;
 
@@ -287,20 +256,6 @@ void Treatment_Manager (void)
         treat_state = TREATMENT_INIT;
         break;
     }
-
-    // check probe communications
-    // switch (probe_comm_state)
-    // {
-    // case PROBE_NO_COMMS:
-    //     break;
-
-    // case PROBE_PLUGGED_WITH_COMMS:
-    //     break;
-
-    // default:
-    //     probe_comm_state = PROBE_NO_COMMS;
-    //     break;
-    // }
 }
 
 

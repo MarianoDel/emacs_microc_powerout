@@ -240,6 +240,19 @@ tests_comms:
 	gcov comms.c -m
 
 
+tests_meas:
+	# compile first modules in this test
+	# first module objects to test
+	gcc -c --coverage src/meas.c -I. $(INCDIR) $(DDEFS)
+	# gcc -c src/utils.c -I. $(INCDIR) $(DDEFS)
+	# second auxiliary helper modules
+	gcc -c src/tests_ok.c -I $(INCDIR)
+	gcc --coverage src/tests_meas.c meas.o tests_ok.o -I $(INCDIR) $(DDEFS)
+	./a.out
+	# process coverage
+	gcov meas.c -m
+
+
 tests_signals:
 	# compile first modules in this test
 	# first module objects to test

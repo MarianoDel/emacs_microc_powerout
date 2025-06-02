@@ -658,14 +658,15 @@ void Signal_Set_Sinusoidal_Cut_Last (unsigned short last_value)
 
 void Signals_Stop (void)
 {
+    DAC_Output1(0);
+    DAC_Output2(0);    
+
     Timer_Square_Signal_Stop();
     Signals_Square_Reset();
 
     Timer_Sine_Signal_Stop();
     Signals_Sinusoidal_Reset();
 
-    DAC_Output1(0);
-    DAC_Output2(0);    
 }
 
 
