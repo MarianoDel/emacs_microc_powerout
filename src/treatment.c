@@ -91,6 +91,7 @@ void Treatment_Manager (void)
 	if (Treatment_Square_Start_Flag ())
 	{
 	    Treatment_Square_Start_Flag_Reset();
+            Treatment_Stop_Flag_Reset ();    // blank previous stops
 	    Usart1Send("starting square on ch1\r\n");
 	    Signals_Square_Reset ();
 	    ChangeLed(LED_TREATMENT_SQUARE_RUNNING);
@@ -101,6 +102,7 @@ void Treatment_Manager (void)
 	if (Treatment_Sine_Start_Flag ())
 	{
 	    Treatment_Sine_Start_Flag_Reset();
+	    Treatment_Stop_Flag_Reset ();    // blank previous stops
 	    Usart1Send("starting sinusoidal on ch1\r\n");
 	    Signals_Sinusoidal_Reset ();
 	    ChangeLed(LED_TREATMENT_SINE_RUNNING);                
